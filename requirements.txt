@@ -2,4 +2,4 @@ keyboard==0.13.5
 customtkinter==5.2.0
 pyperclip==1.8.2
 # Development dependencies
-pyinstaller==6.1.0
+pyinstaller==6.10.0
