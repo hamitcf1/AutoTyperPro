@@ -23,4 +23,4 @@ A local desktop toolkit for automatic typing and idle-triggered mouse activity, 
 
 These packages are not Developer ID notarized or Windows Authenticode signed. Gatekeeper/SmartScreen may ask for user approval. No security settings are changed by the installer. The application never starts typing or jiggling automatically. Text stays on your device; no account or telemetry.
 
-SHA-256 checksum files are included for download verification. macOS packages are built on macOS 15; Windows packages target x64 Windows 10/11. Other architectures are not included.
+SHA-256 checksum files are included for download verification. The Apple Silicon package was built on macOS 15; the Intel package was built and verified as x86_64 under Rosetta. Windows packages target x64 Windows 10/11. Build provenance and verification are recorded in `BUILD-VERIFICATION.json`. Other architectures are not included.
