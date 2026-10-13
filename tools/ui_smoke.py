@@ -33,6 +33,16 @@ def pump_until(predicate,timeout=8):
     assert predicate(),'UI activity did not settle before timeout'
 
 app.root.geometry('980x740'); pump()
+with tempfile.TemporaryDirectory() as locale_dir:
+    app.preferences=Preferences(Path(locale_dir)/'prefs.json')
+    app.text_input.insert('1.0','Draft survives language changes')
+    app.speed.set('slow');app.newline.set('shift_enter')
+    for locale,appearance in [('tr','light'),('en','system'),('en','dark')]:
+        app.change_preferences(locale=locale,appearance=appearance);pump()
+        assert app.text_input.get('1.0','end-1c')=='Draft survives language changes'
+        assert app.speed.get()=='slow' and app.newline.get()=='shift_enter'
+    app.text_input.delete('1.0','end');app.speed.set('balanced');app.newline.set('space')
+
 app.nav.set('Mouse Jiggler'); app.show_page('Mouse Jiggler'); pump()
 assert app.jig_start_btn.winfo_viewable()
 app.start_jiggler(); pump(); assert app.jiggler_thread.is_alive()
@@ -40,7 +50,7 @@ app.nav.set('Auto Typer'); app.show_page('Auto Typer'); pump()
 app.start_typing(); assert not app.typing_active.is_set()
 app.text_input.insert('1.0','İstanbul şğüöç'); pump()
 app.start_delay.delete(0,'end'); app.start_delay.insert(0,'0')
-app.speed.set('Çok hızlı'); app.settings_changed()
+app.speed.set('very_fast'); app.settings_changed()
 app.start_typing(); pump_until(lambda:not app.typing_active.is_set())
 assert ''.join(app.backend.output)=='İstanbul şğüöç',app.backend.output
 assert not app.typing_active.is_set()
@@ -52,7 +62,7 @@ app.start_typing(); pump(.2); app.emergency_stop()
 pump_until(lambda:not app.typing_active.is_set() and not app.jiggler_thread.is_alive())
 assert not app.typing_active.is_set()
 assert not app.jiggler_thread.is_alive()
-app.speed.set('Rastgele'); app.settings_changed(); pump()
+app.speed.set('random'); app.settings_changed(); pump()
 assert app.random_frame.winfo_viewable()
 app.backend.permitted=False;app.check_permissions();pump()
 assert app.permission_bar.winfo_viewable()
