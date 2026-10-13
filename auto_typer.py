@@ -286,6 +286,10 @@ class AutoTyper:
 
     def permission_action(self):
         if self.check_permissions():return
+        if hasattr(self.backend, 'request_permission'):
+            try: self.backend.request_permission()
+            except Exception as exc:
+                self.tell(f'İzin isteği gönderilemedi: {exc}',True);return
         open_permissions()
         self.tell(f'Çalışan uygulama: {sys.executable}',True)
 

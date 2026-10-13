@@ -42,6 +42,12 @@ class MacBackend:
         self.ax = C.CDLL('/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices')
         self.trusted = bind(self.ax, 'AXIsProcessTrusted', C.c_bool)
         self.post_allowed = bind(self.cg, 'CGPreflightPostEventAccess', C.c_bool)
+        self.trusted_options = bind(self.ax, 'AXIsProcessTrustedWithOptions', C.c_bool, C.c_void_p)
+        self.prompt_key = C.c_void_p.in_dll(self.ax, 'kAXTrustedCheckOptionPrompt').value
+        self.cf_true = C.c_void_p.in_dll(self.cf, 'kCFBooleanTrue').value
+        self.dictionary = bind(self.cf, 'CFDictionaryCreate', C.c_void_p, C.c_void_p,
+                               C.POINTER(C.c_void_p), C.POINTER(C.c_void_p), C.c_long,
+                               C.c_void_p, C.c_void_p)
         self.release = bind(self.cf, 'CFRelease', None, C.c_void_p)
         self.key = bind(self.cg, 'CGEventCreateKeyboardEvent', C.c_void_p, C.c_void_p, C.c_uint16, C.c_bool)
         self.unicode = bind(self.cg, 'CGEventKeyboardSetUnicodeString', None, C.c_void_p, C.c_ulong, C.POINTER(C.c_uint16))
@@ -57,6 +63,19 @@ class MacBackend:
         self.listener = None
 
     def allowed(self): return bool(self.trusted() or self.post_allowed())
+    def request_permission(self):
+        """Register this process with macOS; only call after an explicit user action.
+
+        The OS prompt is asynchronous. Its return value never implies a grant.
+        Static CF constants remain alive while the non-retaining dictionary is used.
+        """
+        if self.allowed(): return True
+        keys = (C.c_void_p * 1)(self.prompt_key)
+        values = (C.c_void_p * 1)(self.cf_true)
+        options = self.dictionary(None, keys, values, 1, None, None)
+        if not options: raise RuntimeError('macOS izin isteği oluşturulamadı.')
+        try: return bool(self.trusted_options(options))
+        finally: self.release(options)
     def require_permission(self):
         if not self.allowed(): raise PermissionError('Sistem Ayarları → Gizlilik ve Güvenlik → Erişilebilirlik bölümünde uygulamaya izin verin.')
     def send(self, event):

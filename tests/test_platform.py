@@ -18,6 +18,20 @@ class SimulatedMac(MacBackend):
     def press(self, code, flags=0): self.keys.append(code)
 
 class PlatformTests(unittest.TestCase):
+    def test_explicit_permission_request_prompts_and_releases_options(self):
+        backend = SimulatedMac(permitted=False)
+        backend.prompt_key = 101; backend.cf_true = 202
+        calls = []
+        def dictionary(allocator, keys, values, count, key_callbacks, value_callbacks):
+            calls.append((keys[0], values[0], count)); return 303
+        backend.dictionary = dictionary
+        backend.trusted_options = lambda options: calls.append(('prompt', options)) or False
+        backend.release = lambda options: calls.append(('release', options))
+        self.assertFalse(backend.request_permission())
+        self.assertEqual(calls, [(101,202,1),('prompt',303),('release',303)])
+        self.assertFalse(backend.allowed())
+    def test_granted_permission_does_not_prompt_again(self):
+        self.assertTrue(SimulatedMac().request_permission())
     def test_unicode_events_clear_inherited_modifier_flags(self):
         backend=SimulatedMac(); flags=[]
         backend.key=lambda source,code,down: object()
