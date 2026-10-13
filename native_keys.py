@@ -20,3 +20,13 @@ class KeyChordMixin:
                 try:self.physical_key_event(code,False)
                 except Exception as exc:failure=exc
             if failure:raise failure
+
+    def release_held_inputs(self):
+        failure=None
+        for code in list(getattr(self,'_held_keys',())):
+            try:self.physical_key_event(code,False)
+            except Exception as exc:failure=exc
+        for button in list(getattr(self,'_held_buttons',())):
+            try:self.button_event(button,False,None)
+            except Exception as exc:failure=exc
+        if failure:raise failure

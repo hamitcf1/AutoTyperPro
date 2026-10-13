@@ -188,5 +188,9 @@
   "activity.idle": "Boşta kalma eşiği (saniye)",
   "activity.interval": "En kısa hareket aralığı (saniye)",
   "input.no_display": "Etkin ekran bulunamadı.",
-  "input.key_event": "Klavye olayı oluşturulamadı."
+  "input.key_event": "Klavye olayı oluşturulamadı.",
+  "macro.invalid": "Geçersiz makro verisi veya ayarları.",
+  "macro.invalid_name": "1–80 karakterlik bir ad girin.",
+  "macro.platform_mismatch": "Klavye kayıtları yalnızca kaydedildikleri platformda oynatılabilir.",
+  "macro.display_mismatch": "Ekran düzeni değişti. Önizlemeyi kontrol edip ana ekrana sığdırmayı açıkça etkinleştirin."
 }

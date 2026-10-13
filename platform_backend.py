@@ -69,6 +69,7 @@ class MacEscapeListener(threading.Thread):
         self.invalidate = bind(self.cf, 'CFMachPortInvalidate', None, C.c_void_p)
         self.release = bind(self.cf, 'CFRelease', None, C.c_void_p)
         self.mode = C.c_void_p.in_dll(self.cf, 'kCFRunLoopDefaultMode').value
+        self.event_mask = 1 << 10
         self.tap = None
 
     def handle_event(self, proxy, kind, event, context):
@@ -83,7 +84,7 @@ class MacEscapeListener(threading.Thread):
     def run(self):
         source = None
         try:
-            self.tap = self.create_tap(1, 0, 1, 1 << 10, self._native_callback, None)
+            self.tap = self.create_tap(1, 0, 1, self.event_mask, self._native_callback, None)
             if not self.tap:
                 return
             source = self.create_source(None, self.tap, 0)
@@ -186,14 +187,10 @@ class MacBackend(KeyChordMixin):
                 self.send(event)
 
     def press(self, code, flags=0):
-        self.require_permission()
-        with self.lock:
-            for down in (True, False):
-                event = self.key(None, code, down)
-                if not event:
-                    raise RuntimeError(tr('ui.06d02628d4f8'))
-                self.flags(event, flags)
-                self.send(event)
+        if flags:
+            self.key_chord('enter',('shift',),threading.Event());return
+        try:self.physical_key_event(code,True)
+        finally:self.physical_key_event(code,False)
 
     def newline(self):
         self.press(36, 1 << 17)
@@ -226,12 +223,41 @@ class MacBackend(KeyChordMixin):
         with self.lock:
             if not hasattr(self,'_held_keys'):self._held_keys=set()
             if down:self._held_keys.add(code)
-            else:self._held_keys.discard(code)
             event=self.key(None,code,down)
             if not event:raise RuntimeError(tr('input.key_event'))
             flags=0
-            for held in self._held_keys:flags |= MAC_MODIFIER_FLAGS.get(held,0)
+            for held in self._held_keys:
+                if down or held!=code:flags |= MAC_MODIFIER_FLAGS.get(held,0)
             self.flags(event,flags);self.send(event)
+            if not down:self._held_keys.discard(code)
+
+    def display_layout(self):
+        active=bind(self.cg,'CGGetActiveDisplayList',C.c_int32,C.c_uint32,C.POINTER(C.c_uint32),C.POINTER(C.c_uint32))
+        main=bind(self.cg,'CGMainDisplayID',C.c_uint32)()
+        displays=(C.c_uint32*16)();count=C.c_uint32()
+        if active(16,displays,C.byref(count)) != 0 or not count.value:raise RuntimeError(tr('input.no_display'))
+        result=[]
+        for identity in sorted(displays[:count.value],key=lambda value:value!=main):
+            rect=self.bounds(identity)
+            result.append({'left':rect.origin.x,'top':rect.origin.y,'width':rect.size.width,'height':rect.size.height})
+        return result
+
+    def button_event(self,button,down,point=None):
+        self.require_permission()
+        codes={'left':(1,2,0),'right':(3,4,1),'middle':(25,26,2),'x1':(25,26,3),'x2':(25,26,4)}
+        with self.lock:
+            if not hasattr(self,'_held_buttons'):self._held_buttons=set()
+            if down:self._held_buttons.add(button)
+            if point is not None:self.move_to(point)
+            position=Point(*xy(self.position()))
+            before,after,index=codes[button]
+            self.send(self.mouse(None,before if down else after,position,index))
+            if not down:self._held_buttons.discard(button)
+
+    def scroll_event(self,dx,dy):
+        self.require_permission()
+        create=bind(self.cg,'CGEventCreateScrollWheelEvent',C.c_void_p,C.c_void_p,C.c_uint32,C.c_uint32,C.c_int32,C.c_int32)
+        with self.lock:self.send(create(None,1,2,round(dy),round(dx)))
 
     def micro_activity(self,config,stop):
         self.require_permission()
@@ -378,9 +404,9 @@ class WindowsBackend(KeyChordMixin, DesktopBackend):
         with self.lock:
             self.keyboard_events([KeyboardInput(16, 0, 0, 0, 0), KeyboardInput(13, 0, 0, 0, 0), KeyboardInput(13, 0, 2, 0, 0), KeyboardInput(16, 0, 2, 0, 0)])
 
-    def press(self, code):
-        with self.lock:
-            self.keyboard_events([KeyboardInput(code, 0, 0, 0, 0), KeyboardInput(code, 0, 2, 0, 0)])
+    def press(self,code):
+        try:self.physical_key_event(code,True)
+        finally:self.physical_key_event(code,False)
 
     def idle_seconds(self):
         info = LastInputInfo(C.sizeof(LastInputInfo), 0)
@@ -416,8 +442,41 @@ class WindowsBackend(KeyChordMixin, DesktopBackend):
         with self.lock:
             if not hasattr(self,'_held_keys'):self._held_keys=set()
             if down:self._held_keys.add(code)
-            self.keyboard_events([(code,0,0 if down else 2)])
+            self.keyboard_events([KeyboardInput(code,0,0 if down else 2,0,0)])
             if not down:self._held_keys.discard(code)
+
+    def display_layout(self):
+        callback_type=C.WINFUNCTYPE(C.c_bool,C.c_void_p,C.c_void_p,C.POINTER(WinRect),C.c_ssize_t)
+        enumerate_=bind(C.WinDLL('user32'),'EnumDisplayMonitors',C.c_bool,C.c_void_p,C.c_void_p,callback_type,C.c_ssize_t)
+        result=[];failure=[]
+        def callback(monitor,context,rect,data):
+            info=MonitorInfo();info.size=C.sizeof(info)
+            if not self.monitor_info(monitor,C.byref(info)):failure.append(True);return False
+            r=info.monitor
+            item={'left':r.left,'top':r.top,'width':r.right-r.left,'height':r.bottom-r.top}
+            if info.flags & 1:result.insert(0,item)
+            else:result.append(item)
+            return True
+        if not enumerate_(None,None,callback_type(callback),0) or failure or not result:raise RuntimeError(tr('input.no_display'))
+        return result
+
+    def button_event(self,button,down,point=None):
+        flags={'left':(2,4,0),'right':(8,16,0),'middle':(32,64,0),'x1':(128,256,1),'x2':(128,256,2)}
+        with self.lock:
+            if not hasattr(self,'_held_buttons'):self._held_buttons=set()
+            if down:self._held_buttons.add(button)
+            if point is not None:self.move_to(point)
+            before,after,value=flags[button]
+            event=Input(0,InputUnion(mouse=MouseInput(0,0,value,before if down else after,0,0)))
+            if self.send_input(1,C.byref(event),C.sizeof(Input))!=1:raise RuntimeError(tr('ui.aca15376aca9'))
+            if not down:self._held_buttons.discard(button)
+
+    def scroll_event(self,dx,dy):
+        with self.lock:
+            for amount,flag in ((dy,0x800),(dx,0x1000)):
+                if not amount:continue
+                event=Input(0,InputUnion(mouse=MouseInput(0,0,round(amount*120)&0xFFFFFFFF,flag,0,0)))
+                if self.send_input(1,C.byref(event),C.sizeof(Input))!=1:raise RuntimeError(tr('ui.aca15376aca9'))
 
     def micro_activity(self,config,stop):
         if isinstance(config,bool):config=JigglerConfig(key='f18' if config else None)

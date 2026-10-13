@@ -188,5 +188,9 @@
   "activity.idle": "Idle threshold (seconds)",
   "activity.interval": "Minimum interval (seconds)",
   "input.no_display": "No active display found.",
-  "input.key_event": "Could not create a keyboard event."
+  "input.key_event": "Could not create a keyboard event.",
+  "macro.invalid": "Invalid macro data or settings.",
+  "macro.invalid_name": "Enter a name of 1–80 characters.",
+  "macro.platform_mismatch": "Keyboard recordings can only be replayed on their recording platform.",
+  "macro.display_mismatch": "Display layout changed. Preview and explicitly enable fitting to the primary display before replaying."
 }
