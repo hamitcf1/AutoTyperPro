@@ -279,7 +279,7 @@ class AutoTyper:
         if allowed: self.permission_bar.grid_remove()
         else:
             self.permission_bar.grid()
-            self.permission_text.configure(text='İzin bu işlemde etkin değil. İzin verdiysen yeniden başlat; metnin korunur.')
+            self.permission_text.configure(text='İzin bu kopyada etkin değil. İzin verdiysen yeniden başlat; metnin korunur. Uyarı sürerse eski izin kaydını kaldırıp kurulu kopyayı ekle.')
         if changed and allowed:self.tell('Giriş izni hazır. Başlayabilirsin.')
         if changed and not allowed:self.emergency_stop()
         return allowed
