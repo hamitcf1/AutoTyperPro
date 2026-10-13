@@ -35,6 +35,71 @@ def wait_for_listener(listener, mac=False, timeout=2):
         raise RuntimeError('Global ESC izleyicisi hazır değil. Erişilebilirlik iznini kontrol edip yeniden deneyin.')
 
 
+class MacEscapeListener(threading.Thread):
+    """Observe physical Escape codes without Carbon keyboard-layout APIs.
+
+    New macOS versions require input-source queries on the main queue. ESC
+    has a fixed virtual key code, so this listener never needs those queries.
+    The tap only observes events and cannot suppress or modify user input.
+    """
+    def __init__(self, callback):
+        super().__init__(name='AutoTyper Escape', daemon=True)
+        self.callback = callback
+        self._stop_event = threading.Event()
+        self._ready = False; self._loop = None; self.running = False
+        self.cg = C.CDLL('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics')
+        self.cf = C.CDLL('/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation')
+        callback_type = C.CFUNCTYPE(C.c_void_p, C.c_void_p, C.c_uint32, C.c_void_p, C.c_void_p)
+        self._native_callback = callback_type(self.handle_event)
+        self.create_tap = bind(self.cg, 'CGEventTapCreate', C.c_void_p, C.c_uint32,
+                               C.c_uint32, C.c_uint32, C.c_uint64, callback_type, C.c_void_p)
+        self.enable = bind(self.cg, 'CGEventTapEnable', None, C.c_void_p, C.c_bool)
+        self.keycode = bind(self.cg, 'CGEventGetIntegerValueField', C.c_int64, C.c_void_p, C.c_uint32)
+        self.create_source = bind(self.cf, 'CFMachPortCreateRunLoopSource', C.c_void_p, C.c_void_p, C.c_void_p, C.c_long)
+        self.current_loop = bind(self.cf, 'CFRunLoopGetCurrent', C.c_void_p)
+        self.add_source = bind(self.cf, 'CFRunLoopAddSource', None, C.c_void_p, C.c_void_p, C.c_void_p)
+        self.remove_source = bind(self.cf, 'CFRunLoopRemoveSource', None, C.c_void_p, C.c_void_p, C.c_void_p)
+        self.run_mode = bind(self.cf, 'CFRunLoopRunInMode', C.c_int32, C.c_void_p, C.c_double, C.c_bool)
+        self.invalidate = bind(self.cf, 'CFMachPortInvalidate', None, C.c_void_p)
+        self.release = bind(self.cf, 'CFRelease', None, C.c_void_p)
+        self.mode = C.c_void_p.in_dll(self.cf, 'kCFRunLoopDefaultMode').value
+        self.tap = None
+
+    def handle_event(self, proxy, kind, event, context):
+        if self._stop_event.is_set(): return event
+        if kind in (0xFFFFFFFE, 0xFFFFFFFF):
+            self.enable(self.tap, True)
+        elif kind == 10 and self.keycode(event, 9) == 53:
+            self.callback()
+        return event
+
+    def run(self):
+        source = None
+        try:
+            self.tap = self.create_tap(1, 0, 1, 1 << 10, self._native_callback, None)
+            if not self.tap: return
+            source = self.create_source(None, self.tap, 0)
+            if not source: return
+            self._loop = self.current_loop()
+            self.add_source(self._loop, source, self.mode)
+            self.enable(self.tap, True)
+            self.running = True; self._ready = True
+            while not self._stop_event.is_set():
+                # Bounded waits make stop thread-safe without accessing a run
+                # loop pointer that another thread might already have released.
+                if self.run_mode(self.mode, .2, False) in (1, 2): break
+        finally:
+            self.running = False; self._ready = True
+            if source:
+                self.remove_source(self._loop, source, self.mode)
+                self.release(source)
+            self._loop = None
+            if self.tap:
+                self.invalidate(self.tap); self.release(self.tap); self.tap = None
+
+    def stop(self): self._stop_event.set()
+
+
 class MacBackend:
     def __init__(self):
         self.cg = C.CDLL('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics')
@@ -124,9 +189,7 @@ class MacBackend:
         if f18 and not stop.is_set(): self.press(79)
         return True
     def listen_escape(self, callback):
-        # pynput supplies a maintained event-tap lifecycle and teardown.
-        from pynput import keyboard
-        self.listener = keyboard.Listener(on_press=lambda key: callback() if key == keyboard.Key.esc else None)
+        self.listener = MacEscapeListener(callback)
         self.listener.start()
         wait_for_listener(self.listener, mac=True)
     def escape_healthy(self):
