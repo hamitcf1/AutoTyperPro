@@ -21,7 +21,8 @@ root=tk.Tk();root.title('AutoTyper Windows native test');root.geometry('640x280'
 text=tk.Text(root);text.pack(fill='both',expand=True)
 text.bind('<KeyPress>',lambda e:print('Target key:',e.keysym,repr(e.char),e.state,flush=True))
 results=queue.Queue();failures=[];escaped=threading.Event()
-backend.listen_escape(escaped.set)
+without_listener='--without-listener' in sys.argv
+if not without_listener:backend.listen_escape(escaped.set)
 root.report_callback_exception=lambda kind,error,traceback:failures.append(error)
 expected='İıŞşĞğÜüÖöÇç 🙂\nWindows native input'
 def require_target():
@@ -53,7 +54,7 @@ def check():
     if result=='skip':print('Native Windows input SKIPPED: runner has no foreground interactive desktop');return
     if result:raise result
     assert actual==expected,(repr(actual),repr(expected))
-    assert escaped.wait(1),'Global ESC was not detected'
+    if not without_listener:assert escaped.wait(1),'Global ESC was not detected'
     print('Native Windows input PASS: Turkish Unicode, emoji, Shift+Enter, global ESC, cursor movement and return')
 root.after(700,start);root.after(900,check)
 root.after(15000,lambda:(failures.append(RuntimeError('Windows native test timeout')),backend.close(),root.destroy()))
