@@ -1,10 +1,19 @@
 """AutoTyper Pro desktop application. All UI mutations run on the Tk thread."""
 import queue
+import json
+import os
+from pathlib import Path
+import subprocess
+import secrets
 import sys
 import threading
 import time
 import tkinter as tk
+import tempfile
 import customtkinter as ctk
+from PIL import Image
+from preferences import Preferences, VERSION, resource
+from onboarding import Introduction
 from engine import TypingConfig, JigglerConfig, type_text, jiggle
 from platform_backend import create_backend, open_permissions, play_sound
 
@@ -28,14 +37,16 @@ def duration(seconds):
 
 
 class AutoTyper:
-    def __init__(self):
+    def __init__(self, show_intro=True):
         ctk.set_appearance_mode('dark')
         self.root = ctk.CTk(fg_color=BG)
-        self.root.title('AutoTyper Pro')
+        self.root.title(f'AutoTyper Pro {VERSION}')
         self.root.geometry('1120x800')
         self.root.minsize(980, 740)
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.backend = create_backend()
+        self.preferences=Preferences();self.intro=None;self.permission_checked=0;self.restart_command=None
+        self.permission_ready=False
         self.typing_events = queue.Queue(); self.jiggler_events = queue.Queue()
         self.typing_stop = threading.Event(); self.jiggler_stop = threading.Event()
         self.typing_thread = None; self.jiggler_thread = None
@@ -55,12 +66,13 @@ class AutoTyper:
         self.root.bind('<Control-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
         self.root.after(100, self.poll)
         self.root.after(200, self.check_permissions)
+        if show_intro and not self.preferences.intro_complete():self.root.after(250,self.show_introduction)
 
     def label(self, parent, text, size=14, color=INK, weight='normal', **kwargs):
         return ctk.CTkLabel(parent, text=text, text_color=color, font=(FONT, size, weight), anchor='w', **kwargs)
 
     def button(self, parent, text, command, primary=False, **kwargs):
-        return ctk.CTkButton(parent, text=text, command=command, height=38, corner_radius=9,
+        return ctk.CTkButton(parent, text=text, command=command, height=kwargs.pop('height',38), corner_radius=9,
             font=(FONT, 13, 'bold' if primary else 'normal'), fg_color=ACCENT if primary else LINE,
             hover_color=HOVER if primary else '#435447', text_color=BG if primary else INK,
             text_color_disabled='#6C7B70', **kwargs)
@@ -82,7 +94,10 @@ class AutoTyper:
         header.grid_columnconfigure(1, weight=1)
         mark = ctk.CTkFrame(header, width=42, height=42, corner_radius=12, fg_color=ACCENT)
         mark.grid(row=0, column=0, rowspan=2, padx=(0,12)); mark.grid_propagate(False)
-        ctk.CTkLabel(mark, text='a↗', font=(FONT, 25, 'bold'), text_color=BG).place(relx=.5, rely=.5, anchor='center')
+        icon=Image.open(resource('assets/icon.png'))
+        self.brand_icon=ctk.CTkImage(icon,icon,size=(42,42))
+        ctk.CTkLabel(mark, text='',image=self.brand_icon).place(relx=.5, rely=.5, anchor='center')
+        if sys.platform=='win32':self.root.iconbitmap(str(resource('assets/icon.ico')))
         self.label(header, 'AutoTyper', 20, weight='bold').grid(row=0, column=1, sticky='sw')
         self.label(header, 'PRO  /  DESKTOP TOOLS', 10, MUTED).grid(row=1, column=1, sticky='nw')
         self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', 'Mouse Jiggler'], command=self.show_page,
@@ -97,7 +112,10 @@ class AutoTyper:
         self.permission_bar.grid_columnconfigure(0, weight=1)
         self.permission_text = self.label(self.permission_bar, 'Klavye ve fare kontrolü için erişilebilirlik izni gerekiyor.', 12, '#E4CEAC')
         self.permission_text.grid(row=0, column=0, sticky='w', padx=14, pady=12)
-        self.button(self.permission_bar, 'İzin ayarlarını aç ↗', open_permissions, width=158).grid(row=0, column=1, padx=10)
+        self.permission_text.configure(wraplength=490,justify='left')
+        self.button(self.permission_bar,'Yeniden kontrol et',self.check_permissions,width=135).grid(row=0,column=1,padx=4)
+        self.button(self.permission_bar,'Ayarlar ↗',self.permission_action,width=80).grid(row=0,column=2,padx=4)
+        self.button(self.permission_bar,'Yeniden başlat',self.restart,width=116).grid(row=0,column=3,padx=8)
         self.permission_bar.grid_remove()
         self.body = ctk.CTkFrame(self.root, fg_color='transparent')
         self.body.grid(row=2, column=0, sticky='nsew', padx=30)
@@ -110,7 +128,9 @@ class AutoTyper:
         footer.grid(row=3, column=0, sticky='ew', padx=30, pady=(10,18)); footer.grid_columnconfigure(0, weight=1)
         self.status = self.label(footer, 'Metnini ekle. Ritmini seç. Yazmaya başla.', 12, MUTED, wraplength=650, justify='left')
         self.status.grid(row=0, column=0, sticky='w')
-        self.label(footer, 'ESC  tüm etkinlikleri durdurur', 11, MUTED).grid(row=0, column=1, sticky='e')
+        self.status.configure(wraplength=520)
+        self.button(footer,'Tanıtım',self.show_introduction,width=68,height=28).grid(row=0,column=1,padx=12)
+        self.label(footer, 'ESC  tüm etkinlikleri durdurur', 11, MUTED).grid(row=0, column=2, sticky='e')
         self.mutable_typing = [self.speed_menu, self.newline_menu, self.start_delay, self.min_delay, self.max_delay,
             self.natural_switch, self.pause_switch, self.paste_btn, self.clear_btn]
 
@@ -254,9 +274,58 @@ class AutoTyper:
 
     def check_permissions(self):
         allowed = self.backend.allowed()
+        changed=allowed!=self.permission_ready
+        self.permission_ready=allowed;self.permission_checked=time.monotonic()
         if allowed: self.permission_bar.grid_remove()
-        else: self.permission_bar.grid()
+        else:
+            self.permission_bar.grid()
+            self.permission_text.configure(text='İzin bu işlemde etkin değil. İzin verdiysen yeniden başlat; metnin korunur.')
+        if changed and allowed:self.tell('Giriş izni hazır. Başlayabilirsin.')
+        if changed and not allowed:self.emergency_stop()
         return allowed
+
+    def permission_action(self):
+        if self.check_permissions():return
+        open_permissions()
+        self.tell(f'Çalışan uygulama: {sys.executable}',True)
+
+    def show_introduction(self):
+        if self.closing or self.intro:return
+        if self.typing_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()):
+            self.tell('Tanıtımı açmadan önce etkinlikleri durdur.');return
+        self.intro=Introduction(self)
+
+    def restart(self):
+        if self.closing:return
+        token=secrets.token_urlsafe(32)
+        state={'_resume_token':token,'text':self.text_input.get('1.0','end-1c'),'speed':self.speed.get(),'newline':self.newline.get(),
+               'natural':self.natural.get(),'word_pauses':self.word_pauses.get(),'sound':self.sound.get(),
+               'start_delay':self.start_delay.get(),'min_delay':self.min_delay.get(),'max_delay':self.max_delay.get(),
+               'idle':self.idle_entry.get(),'interval':self.interval_entry.get(),'f18':self.f18.get()}
+        try:
+            with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',prefix='autotyper-resume-',suffix='.json',delete=False) as f:
+                json.dump(state,f,ensure_ascii=False);path=f.name
+        except OSError as exc:self.tell(f'Yeniden başlatma durumu kaydedilemedi: {exc}',True);return
+        self.restart_command=[sys.executable]+([] if getattr(sys,'frozen',False) else [str(Path(__file__).resolve())])+['--resume-state',path,'--resume-token',token,'--skip-intro']
+        self.close()
+
+    def restore_state(self,path,token=None):
+        path=Path(path)
+        owned=False
+        try:
+            data=json.loads(path.read_text(encoding='utf-8'))
+            if not isinstance(data,dict):raise ValueError('Invalid resume state')
+            owned=bool(token and data.get('_resume_token')==token and path.name.startswith('autotyper-resume-') and path.suffix=='.json'
+                       and not path.is_symlink() and path.parent.resolve()==Path(tempfile.gettempdir()).resolve())
+            self.text_input.insert('1.0',data.get('text',''))
+            for name in ('speed','newline','natural','word_pauses','sound','f18'):
+                if name in data:getattr(self,name).set(data[name])
+            for name,key in [('start_delay','start_delay'),('min_delay','min_delay'),('max_delay','max_delay'),('idle_entry','idle'),('interval_entry','interval')]:
+                if key in data:entry=getattr(self,name);entry.delete(0,'end');entry.insert(0,str(data[key]))
+            self.settings_changed()
+        except (OSError,ValueError,TypeError,AttributeError):self.tell('Önceki oturum geri yüklenemedi.',True)
+        finally:
+            if owned:path.unlink(missing_ok=True)
 
     def ensure_permission(self):
         if not self.check_permissions():
@@ -355,7 +424,7 @@ class AutoTyper:
 
     def start_jiggler(self):
         if self.jiggler_thread and self.jiggler_thread.is_alive(): return
-        if sys.platform != 'darwin': self.tell('Mouse Jiggler bu sürümde macOS gerektirir.',True); return
+        if sys.platform not in ('darwin','win32'): self.tell('Mouse Jiggler macOS ve Windows gerektirir.',True); return
         try: config = JigglerConfig(float(self.idle_entry.get()),float(self.interval_entry.get()),self.f18.get()).validate()
         except ValueError as exc: self.tell(str(exc) if 'aralığında' in str(exc) else 'Süre alanlarına geçerli sayılar girin.',True); return
         if not self.ensure_permission(): return
@@ -372,6 +441,7 @@ class AutoTyper:
 
     def poll(self):
         if self.closing: return
+        if time.monotonic()-self.permission_checked>=2:self.check_permissions()
         listener_failed = self.listener_started and not self.backend.escape_healthy()
         if listener_failed:
             self.listener_started = False
@@ -416,9 +486,33 @@ class AutoTyper:
     def await_shutdown(self):
         if any(t and t.is_alive() for t in (self.typing_thread,self.jiggler_thread, self.backend.listener if hasattr(self.backend, 'listener') else None)):
             self.root.after(30,self.await_shutdown)
-        else: self.root.destroy()
+        else:
+            if self.restart_command:
+                try:subprocess.Popen(self.restart_command)
+                except OSError as exc:
+                    self.closing=False;self.restart_command=None;self.listener_started=False
+                    self.root.deiconify();self.tell(f'Yeniden başlatılamadı; metnin korunuyor: {exc}',True)
+                    self.root.after(100,self.poll);return
+            self.root.destroy()
 
     def run(self): self.root.mainloop()
 
 
-if __name__ == '__main__': AutoTyper().run()
+if __name__ == '__main__':
+    import argparse
+    parser=argparse.ArgumentParser();parser.add_argument('--skip-intro',action='store_true');parser.add_argument('--resume-state')
+    parser.add_argument('--diagnostics',action='store_true')
+    parser.add_argument('--resume-token')
+    parser.add_argument('--smoke-test',action='store_true')
+    args=parser.parse_args()
+    if args.diagnostics:
+        backend=create_backend()
+        print(json.dumps({'version':VERSION,'platform':sys.platform,'executable':sys.executable,'permission':backend.allowed(),
+                          'ax_trusted':bool(backend.trusted()) if hasattr(backend,'trusted') else None,
+                          'post_allowed':bool(backend.post_allowed()) if hasattr(backend,'post_allowed') else None}))
+        backend.close()
+    else:
+        app=AutoTyper(show_intro=not(args.skip_intro or args.smoke_test))
+        if args.resume_state:app.restore_state(args.resume_state,args.resume_token)
+        if args.smoke_test:app.root.after(1200,app.close)
+        app.run()

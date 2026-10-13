@@ -1,6 +1,10 @@
-# AutoTyper Pro
+# AutoTyper Pro 2.1
 
 A local desktop toolkit with automatic typing and an independent Mouse Jiggler. The redesigned Turkish interface includes a spacious editor, graphite surfaces, live progress, and persistent activity status. Text stays on your device.
+
+[Download macOS / Windows installers](https://github.com/hamitcf1/AutoTyperPro/releases/tag/v2.1.0)
+
+Mac: open the DMG for your processor, drag the app to Applications, eject the image and launch the installed copy. Windows: use the per-user installer or extract the entire portable ZIP. A short skippable introduction appears once and can be replayed from the app.
 
 ## Run on macOS
 
@@ -12,7 +16,7 @@ On this Mac, open `~/Applications/AutoTyperPro.app`. Rebuilt bundles are availab
 
 Requires Python 3.11+ with Tk support. Developed on Apple Silicon using Python 3.14. The source launcher creates a virtual environment on first run and checks/repairs dependencies on every launch.
 
-Enable AutoTyperPro in **System Settings → Privacy & Security → Accessibility**. Source execution may require permission for Python or the launching terminal. The permission banner opens the relevant settings. Restart after granting permission if necessary. Root privileges are not required.
+Enable AutoTyperPro in **System Settings → Privacy & Security → Accessibility**. Source execution may require permission for Python or the launching terminal. The permission banner opens the relevant settings. Permission status refreshes automatically. If an already granted permission is still rejected, use **Yeniden başlat** (Restart); the app preserves text/settings through a temporary local file that is deleted after restoration. Run the installed copy rather than an older build. An outdated unsigned permission record may need removal and replacement with the current installed app. Newer macOS calls this permission Device Control and Data Access. Root privileges are not required.
 
 The local bundle is ad-hoc signed, not Developer ID signed or notarized. Distribution to other Macs may require additional Gatekeeper approval.
 
@@ -37,4 +41,6 @@ No clicking or automatic startup. It pauses during typing and continues across t
 
 Output: `dist/AutoTyperPro.app`. Sounds and CustomTkinter resources are bundled. `requirements-lock.txt` records the verified Mac environment and includes macOS-specific PyObjC packages; use `requirements.txt` on other platforms.
 
-A Windows typing adapter and build script remain available but were not verified on this Mac. Mouse Jiggler is macOS-only in this release.
+Mouse Jiggler supports macOS and Windows. GitHub Actions builds Mac arm64, Mac Intel and Windows x64 artifacts, checks the packaged launch and verifies Windows installation/uninstallation before publication. Packages are not notarized or Authenticode signed; Gatekeeper/SmartScreen may require approval.
+
+Build DMGs with `python packaging/macos/build_dmg.py` after installing `ds-store` and `mac-alias`. The Windows installer uses Inno Setup 6 and `packaging/windows/installer.iss`. The **Release installers** workflow publishes only after all three platforms pass.
