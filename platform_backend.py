@@ -187,13 +187,19 @@ class WindowsBackend(DesktopBackend):
         self.monitor_info=bind(user,'GetMonitorInfoW',C.c_bool,C.c_void_p,C.POINTER(MonitorInfo))
         self.metric=bind(user,'GetSystemMetrics',C.c_int32,C.c_int32)
         self.send_input=bind(user,'SendInput',C.c_uint32,C.c_uint32,C.POINTER(Input),C.c_int32)
+        self.scan_code=bind(user,'MapVirtualKeyW',C.c_uint32,C.c_uint32,C.c_uint32)
         self.lock=threading.Lock()
     def keyboard_events(self,events):
+        for event in events:
+            if event.vk and not event.flags&4:
+                # Tk and other targets inspect the hardware scan code even
+                # when events are submitted using a virtual key.
+                event.scan=self.scan_code(event.vk,0)
         inputs=(Input*len(events))(*(Input(1,InputUnion(keyboard=e)) for e in events))
         count=self.send_input(len(inputs),inputs,C.sizeof(Input))
         if count!=len(inputs):
             # Release any partially submitted physical keys/modifiers.
-            releases=[KeyboardInput(e.vk,0,2,0,0) for e in events if e.vk and not e.flags&2]
+            releases=[KeyboardInput(e.vk,e.scan,2,0,0) for e in events if e.vk and not e.flags&2]
             if releases:
                 cleanup=(Input*len(releases))(*(Input(1,InputUnion(keyboard=e)) for e in releases))
                 self.send_input(len(cleanup),cleanup,C.sizeof(Input))

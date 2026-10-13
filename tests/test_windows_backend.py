@@ -4,7 +4,9 @@ import unittest
 from platform_backend import WindowsBackend, WinPoint, WinRect
 
 class FakeWindows(WindowsBackend):
-    def __init__(self, moved=False):self.lock=threading.Lock();self.moves=[];self.calls=0;self.moved=moved
+    def __init__(self, moved=False):
+        self.lock=threading.Lock();self.moves=[];self.calls=0;self.moved=moved
+        self.scan_code=lambda vk,mode:{0x10:0x2A,0xA0:0x2A,0x0D:0x1C,0x1B:1}.get(vk,0)
     def position(self):
         self.calls+=1
         return WinPoint(99,20) if self.calls==1 else WinPoint(50,50) if self.moved else WinPoint(98,20)
@@ -13,6 +15,13 @@ class FakeWindows(WindowsBackend):
     def move_to(self,point):self.moves.append((point.x,point.y))
 
 class WindowsTests(unittest.TestCase):
+    def test_physical_keys_include_hardware_scan_codes(self):
+        b=FakeWindows();record=[]
+        def send(count,events,size):
+            record.extend((events[i].payload.keyboard.vk,events[i].payload.keyboard.scan,events[i].payload.keyboard.flags) for i in range(count));return count
+        b.send_input=send;b.newline();b.press(0x1B)
+        self.assertEqual([scan for vk,scan,flags in record],[0x2A,0x1C,0x1C,0x2A,1,1])
+        self.assertEqual([flags for vk,scan,flags in record],[0,0,2,2,0,2])
     def test_keyboard_injection_rejection_is_reported(self):
         b=FakeWindows();b.send_input=lambda *args:0
         with self.assertRaises(RuntimeError):b.write('İ')
