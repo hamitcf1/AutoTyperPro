@@ -1,136 +1,40 @@
-# Auto Typer Pro
+# AutoTyper Pro
 
-A modern, customizable, and user-friendly auto-typing application featuring natural typing simulation, real-time progress tracking, and various control options.
+A local desktop toolkit with automatic typing and an independent Mouse Jiggler. The redesigned Turkish interface includes a spacious editor, graphite surfaces, live progress, and persistent activity status. Text stays on your device.
 
-## Features
+## Run on macOS
 
-### Typing Modes
-- **Super Fast** (30ms delay)
-- **Fast** (60ms delay)
-- **Normal** (100ms delay)
-- **Slow** (150ms delay)
-- **Super Slow** (250ms delay)
-- **Kaotic Random** (customizable delay range: 10-5000ms)
+On this Mac, open `~/Applications/AutoTyperPro.app`. Rebuilt bundles are available at `dist/AutoTyperPro.app`. To run from source:
 
-### Advanced Options
-- **Start Delay**: Customizable delay before typing begins (default: 3 seconds)
-- **Natural Typing**: Simulates human-like typing with random variations (±30% delay)
-- **Word Pauses**: Extra pauses between words for more natural appearance
-- **Newline Handling**:
-  - Space: Convert newlines to spaces
-  - Shift+Enter: Type actual newlines
-  - Ignore: Skip newlines
-
-### Smart Progress Tracking
-- Real-time character and word count
-- Progress percentage display
-- Estimated completion time calculation
-- Remaining time display during typing
-- Time estimates update with setting changes
-
-### Control Features
-- **Emergency Stop**: Press ESC at any time to stop typing
-- **Sound Effects**: Toggle-able notifications for:
-  - Start typing
-  - Finish typing
-  - Stop typing
-  - Emergency stop
-
-## Installation
-
-### Method 1: Running from Source
-1. Download Python 3.x from [python.org](https://www.python.org/downloads/)
-   - Make sure to check "Add Python to PATH" during installation
-2. Clone this repository:
-   ```bash
-   git clone https://github.com/username/AutoTyperPro.git
-   cd AutoTyperPro
-   ```
-3. Run `make_executable.bat`
-   - This script will automatically:
-     - Create virtual environment
-     - Install required packages
-     - Create executable file
-
-### Method 2: Using Pre-built Executable
-1. Download the latest release from [Releases](../../releases)
-2. Extract the ZIP file
-3. Run `AutoTyperPro.exe`
-
-## Sound Files
-Place these .wav files in the 'sounds' folder:
-- start.wav
-- finish.wav
-- stop.wav
-- emergency.wav
-
-## Development
-
-### Requirements
-- Python 3.x
-- Packages:
-  ```bash
-  keyboard==0.13.5
-  customtkinter==5.2.0
-  pyperclip==1.8.2
-  ```
-
-### Development Setup
-1. Clone the repository
-2. Create virtual environment:
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate  # Windows
-   source .venv/bin/activate  # Linux/Mac
-   ```
-3. Install requirements:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-### Building Executable
-On Windows:
 ```bash
-make_executable.bat
+./run_mac.command
 ```
 
-On Linux/Mac:
+Requires Python 3.11+ with Tk support. Developed on Apple Silicon using Python 3.14. The source launcher creates a virtual environment on first run and checks/repairs dependencies on every launch.
+
+Enable AutoTyperPro in **System Settings → Privacy & Security → Accessibility**. Source execution may require permission for Python or the launching terminal. The permission banner opens the relevant settings. Restart after granting permission if necessary. Root privileges are not required.
+
+The local bundle is ad-hoc signed, not Developer ID signed or notarized. Distribution to other Macs may require additional Gatekeeper approval.
+
+## Automatic typing
+
+Paste text, select a speed, set a start delay, and click **Yazmaya başla**. Switch to the target application during the countdown. ESC stops both tools.
+
+Six speed modes: 30, 60, 100, 150, 250 ms, or a random 10–5000 ms range. Start delay accepts 0–60 seconds. Optional natural variation, word pauses, and sound notifications are included. Newlines can become spaces, Shift+Enter, or be skipped. Native macOS events support Unicode, including Turkish characters; target applications must accept Unicode input. Estimates exclude target application processing latency.
+
+## Mouse Jiggler
+
+Use the separate tab and explicitly start it. Defaults: 60 seconds idle threshold, 30 seconds minimum interval. Both accept 5–3600 seconds. Once idle, it moves the cursor approximately one point and returns after approximately 80 ms. Synthetic activity can reset macOS idle time, so subsequent movement requires both the idle threshold and minimum interval.
+
+No clicking or automatic startup. It pauses during typing and continues across tab switches. It avoids restoring the cursor if the user moves it during the excursion. Optional F18 activity defaults to off because applications may bind it to a shortcut. Stop, ESC, or closing the application ends activity. It does not guarantee system sleep prevention or presence status in other applications.
+
+## Verify and build
+
 ```bash
-python -m PyInstaller --name="AutoTyperPro" --onefile --windowed --add-data "sounds:sounds" --clean auto_typer.py
+.venv/bin/python -m unittest discover -s tests -v
+./make_executable_mac.sh
 ```
 
-## Usage
+Output: `dist/AutoTyperPro.app`. Sounds and CustomTkinter resources are bundled. `requirements-lock.txt` records the verified Mac environment and includes macOS-specific PyObjC packages; use `requirements.txt` on other platforms.
 
-1. Start the program
-2. Enter or paste your text
-3. Configure typing settings:
-   - Select typing speed
-   - Adjust start delay
-   - Enable natural typing and word pauses if desired
-   - Choose newline behavior
-4. Check estimated completion time
-5. Click "Start Typing" and switch to target application
-
-## Important Notes
-
-- May require administrator privileges for keyboard simulation
-- Test before using with important text
-- ESC key always available for emergency stop
-- Time estimates consider:
-  - Selected typing speed
-  - Natural typing variations
-  - Word pauses
-  - Start delay
-  - Text length
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+A Windows typing adapter and build script remain available but were not verified on this Mac. Mouse Jiggler is macOS-only in this release.

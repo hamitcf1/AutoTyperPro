@@ -1,128 +1,55 @@
-# Auto Typer Pro
+# AutoTyper Pro
 
-Modern, özelleştirilebilir ve kullanıcı dostu bir otomatik yazma uygulaması. Doğal yazma simulasyonu, gerçek zamanlı ilerleme takibi ve çeşitli kontrol seçenekleri sunar.
+Mac için iki yerel araç: doğal ritimde otomatik yazma ve bağımsız Mouse Jiggler. Yenilenen Türkçe arayüz, grafit yüzeyler, geniş metin editörü, canlı ilerleme ve açık çalışma durumları sunar. Veriler cihazında kalır.
 
-[English README](#english)
+[English documentation](README_EN.md)
 
-## Features
+## Bu Mac’te çalıştırma
 
-### Typing Modes
-- **Super Fast** (30ms delay)
-- **Fast** (60ms delay)
-- **Normal** (100ms delay)
-- **Slow** (150ms delay)
-- **Super Slow** (250ms delay)
-- **Kaotic Random** (customizable delay range: 10-5000ms)
+Bu Mac’e kurulan uygulama: `~/Applications/AutoTyperPro.app`. Finder’dan çift tıklayarak aç. Yeniden oluşturulan paket `dist/AutoTyperPro.app` altında bulunur.
 
-### Advanced Options
-- **Start Delay**: Customizable delay before typing begins (default: 3 seconds)
-- **Natural Typing**: Simulates human-like typing with random variations (±30% of base delay)
-- **Word Pauses**: Extra pauses between words for more natural typing
-- **Newline Handling**:
-  - Space: Convert newlines to spaces
-  - Shift+Enter: Type actual newlines
-  - Ignore: Skip newlines
+Kaynak koddan:
 
-### Smart Progress Tracking
-- Real-time character and word count
-- Progress percentage display
-- Estimated completion time calculation
-- Remaining time display during typing
-- Time estimates update with setting changes
+```bash
+./run_mac.command
+```
 
-### Text Management
-- **Copy/Paste/Clear** functions with instant feedback
-- Real-time character and word count updates
-- Progress tracking during typing
-- Live status updates
+Python 3.11 veya üstü, Tk desteği ve macOS gerekir. Bu sürüm Apple Silicon üzerinde Python 3.14 ile geliştirilmiştir. İlk kaynak çalıştırma bir `.venv` oluşturur; başlatıcı her çalıştırmada bağımlılıkları kontrol edip eksikleri yükler.
 
-### Control Features
-- **Emergency Stop**: Press ESC at any time to stop typing
-- **Sound Effects**: Toggle-able sound notifications for:
-  - Start typing
-  - Finish typing
-  - Stop typing
-  - Emergency stop
+## Erişilebilirlik izni
 
-### User Interface
-- Modern dark theme
-- Real-time statistics display
-- Status bar with color-coded messages
-- Progress and time tracking
+Klavye ve fare olaylarını gönderebilmek için **Sistem Ayarları → Gizlilik ve Güvenlik → Erişilebilirlik** bölümünde AutoTyperPro’yu etkinleştir. Kaynaktan çalıştırırken Python veya başlatan terminal uygulamasının izni gerekebilir. Uygulamanın izin çubuğu ilgili ayarları açar. İzin verdikten sonra uygulamayı yeniden açman gerekebilir. Yönetici/root olarak çalıştırma gerekmez.
 
-## Installation
+Dağıtım paketi yerel olarak imzalanır; Apple Developer sertifikasıyla imzalanmış veya notarize edilmiş bir sürüm değildir. Başka Mac’lerde Gatekeeper tarafından ek kullanıcı onayı istenebilir.
 
-### Method 1: Running from Source
-1. Install Python 3.x from [python.org](https://www.python.org/downloads/)
-2. Install required packages:
-   ```bash
-   pip install keyboard customtkinter pyperclip
-   ```
-3. Download the source code
-4. Place sound files in the 'sounds' folder
+## Auto Typer
 
-### Method 2: Using the Executable
-1. Download the latest release
-2. Extract the zip file
-3. Run `AutoTyperPro.exe`
+1. Metnini yaz veya yapıştır.
+2. Hız seç: çok hızlı (30 ms), hızlı (60 ms), dengeli (100 ms), yavaş (150 ms), çok yavaş (250 ms) veya rastgele (10–5000 ms).
+3. Başlangıç beklemesini (0–60 saniye), doğal yazmayı, kelime arası beklemeyi ve satır davranışını ayarla.
+4. **Yazmaya başla** düğmesine bas; geri sayım sırasında hedef uygulamaya geç.
+5. ESC ile durdur. ESC her iki aracı da durdurur.
 
-## Sound Effects Setup
-Place these .wav files in the 'sounds' folder:
-- start.wav
-- finish.wav
-- stop.wav
-- emergency.wav
+Satır sonları boşluğa çevrilebilir, Shift+Enter olarak gönderilebilir veya atlanabilir. Türkçe ve diğer Unicode karakterleri macOS’un yerel olaylarıyla gönderilir. Hedef uygulamanın Unicode girişini ve seçtiğin satır davranışını desteklemesi gerekir. İlerleme ve tahmini süre yazma boyunca güncellenir. Tahmin, hedef uygulamanın kendi gecikmesini kapsamaz.
 
-## Usage
+## Mouse Jiggler
 
-1. Launch AutoTyper Pro
-2. Paste or type your text in the input box
-3. Configure typing settings:
-   - Select typing speed
-   - Adjust start delay (default: 3 seconds)
-   - Enable/disable natural typing
-   - Choose newline handling method
-   - Toggle sound effects
-   - Enable word pauses if desired
-4. Review the estimated completion time
-5. Click "Start Typing" and switch to your target application
+Ayrı sekmeden **Jiggler’ı başlat** düğmesine bas. Varsayılan olarak 60 saniye giriş yapılmadığında yaklaşık 1 noktalık hareket yapıp 80 ms sonra imleci yerine getirir. Hareketler arasında en az 30 saniye bekler. İki süre de 5–3600 saniye aralığında ayarlanabilir. macOS sentetik olayları da boşta süre hesabına dahil edebilir; sonraki hareket için hem eşik hem aralık sağlanmalıdır.
 
-## Important Notes
+- Tıklama yapmaz, açılışta kendiliğinden başlamaz.
+- Yazma etkinliğinde bekler; sekme değiştirilince çalışmaya devam eder.
+- Kullanıcı hareket sırasında fareyi taşırsa imleci eski konuma zorlamaz.
+- F18 tuş etkinliği isteğe bağlıdır ve varsayılan olarak kapalıdır; bazı uygulamalarda kısayol tetikleyebilir.
+- Durdur, ESC veya uygulamayı kapatma etkinliği bitirir.
+- İşletim sisteminin uyku veya başka uygulamaların durum davranışını garanti etmez.
 
-- Requires administrative privileges for keyboard simulation
-- Test the typing speed and options before using with important text
-- Use ESC key for emergency stop at any time
-- Time estimates consider:
-  - Selected typing speed
-  - Natural typing variations
-  - Word pauses
-  - Start delay
-  - Text length
+## Test ve paketleme
 
-## Tips for Best Results
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+./make_executable_mac.sh
+```
 
-- Use "Natural Typing" and "Word Pauses" for human-like typing
-- For chat applications, use "Shift+Enter" newline mode
-- Adjust start delay based on your needs
-- Monitor the estimated completion time when changing settings
-- Keep sound effects enabled for better feedback
-- Use emergency stop (ESC) if needed
+Paket çıktısı `dist/AutoTyperPro.app` olur. Sesler ve CustomTkinter kaynakları pakete dahil edilir. Sanal ortam ve paket çıktıları Git’e eklenmez. `requirements-lock.txt`, bu Mac’te doğrulanan bağımlılık sürümlerini kaydeder; macOS’a özgü PyObjC paketleri içerir. Diğer platformlarda `requirements.txt` kullan.
 
-## Building from Source
-
-To create your own executable:
-1. Install PyInstaller:
-   ```bash
-   pip install pyinstaller
-   ```
-2. Create the executable:
-   ```bash
-   pyinstaller --onefile --windowed --icon=icon.ico --add-data "sounds;sounds" auto_typer.py
-   ```
-3. The executable will be created in the `dist` folder
-
-## Troubleshooting
-
-- If sounds don't play, ensure .wav files are in the sounds folder
-- If keyboard simulation doesn't work, run as administrator
-- For any issues, check the console output for error messages
+Windows’ta yazma için pynput adaptörü ve `make_executable.bat` korunur; bu sürümün Windows paketi burada doğrulanmamıştır. Mouse Jiggler bu sürümde macOS’a özeldir.
