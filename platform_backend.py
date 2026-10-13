@@ -231,6 +231,12 @@ class MacBackend(KeyChordMixin):
             self.flags(event,flags);self.send(event)
             if not down:self._held_keys.discard(code)
 
+    def listen_events(self,callback,capture):
+        from event_capture import listen_mac
+        self.require_permission();listener=listen_mac(callback,capture)
+        if not hasattr(self,'capture_listeners'):self.capture_listeners=[]
+        self.capture_listeners.append(listener);return listener
+
     def display_layout(self):
         active=bind(self.cg,'CGGetActiveDisplayList',C.c_int32,C.c_uint32,C.POINTER(C.c_uint32),C.POINTER(C.c_uint32))
         main=bind(self.cg,'CGMainDisplayID',C.c_uint32)()
@@ -262,7 +268,9 @@ class MacBackend(KeyChordMixin):
     def micro_activity(self,config,stop):
         self.require_permission()
         if isinstance(config,bool):config=JigglerConfig(key='f18' if config else None)
-        with self.lock:return perform_activity(self,config,stop)
+        with self.lock:
+            if getattr(self,'_activity_should_yield',lambda:False)():return False
+            return perform_activity(self,config,stop)
 
     def listen_escape(self, callback):
         self.listener = MacEscapeListener(callback)
@@ -273,6 +281,7 @@ class MacBackend(KeyChordMixin):
         return bool(self.listener and self.listener.is_alive() and self.listener.running and (getattr(self.listener, '_loop', None) is not None))
 
     def close(self):
+        for listener in getattr(self,'capture_listeners',()):listener.stop()
         if self.listener:
             self.listener.stop()
 
@@ -311,6 +320,7 @@ class DesktopBackend:
         raise RuntimeError(tr('ui.f98309cec1f8'))
 
     def close(self):
+        for listener in getattr(self,'capture_listeners',()):listener.stop()
         if self.listener:
             self.listener.stop()
 
@@ -445,6 +455,12 @@ class WindowsBackend(KeyChordMixin, DesktopBackend):
             self.keyboard_events([KeyboardInput(code,0,0 if down else 2,0,0)])
             if not down:self._held_keys.discard(code)
 
+    def listen_events(self,callback,capture):
+        from event_capture import listen_windows
+        listener=listen_windows(callback,capture)
+        if not hasattr(self,'capture_listeners'):self.capture_listeners=[]
+        self.capture_listeners.append(listener);return listener
+
     def display_layout(self):
         callback_type=C.WINFUNCTYPE(C.c_bool,C.c_void_p,C.c_void_p,C.POINTER(WinRect),C.c_ssize_t)
         enumerate_=bind(C.WinDLL('user32'),'EnumDisplayMonitors',C.c_bool,C.c_void_p,C.c_void_p,callback_type,C.c_ssize_t)
@@ -480,4 +496,6 @@ class WindowsBackend(KeyChordMixin, DesktopBackend):
 
     def micro_activity(self,config,stop):
         if isinstance(config,bool):config=JigglerConfig(key='f18' if config else None)
-        with self.lock:return perform_activity(self,config,stop)
+        with self.lock:
+            if getattr(self,'_activity_should_yield',lambda:False)():return False
+            return perform_activity(self,config,stop)

@@ -22,7 +22,7 @@ expected='İıŞşĞğÜüÖöÇç 🙂\nikinci satır'
 def send():
     try:
         front=NSWorkspace.sharedWorkspace().frontmostApplication()
-        if front.processIdentifier()!=os.getpid(): raise RuntimeError('Test window is not foreground; aborting input')
+        if front.processIdentifier()!=os.getpid(): raise RuntimeError(f'Test window is not foreground (self={os.getpid()}, front={front.processIdentifier()}, app={front.localizedName()}); aborting input')
         for char in 'İıŞşĞğÜüÖöÇç 🙂':
             backend.write(char); time.sleep(.05)
         backend.newline(); time.sleep(.1)
@@ -37,7 +37,11 @@ def activate():
     NSApplication.sharedApplication().setActivationPolicy_(0)
     NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
     root.lift(); text.focus_force()
-    root.after(1000,lambda:threading.Thread(target=send,daemon=True).start())
+    root.after(1000,wait_for_focus)
+def wait_for_focus():
+    if NSWorkspace.sharedWorkspace().frontmostApplication().processIdentifier()==os.getpid():
+        threading.Thread(target=send,daemon=True).start()
+    else: root.after(100,wait_for_focus)
 def check():
     try: result=results.get_nowait()
     except queue.Empty: root.after(100,check); return
@@ -48,6 +52,6 @@ def check():
     assert escaped.wait(1),'Global ESC did not fire'
     print('Native smoke PASS: Turkish Unicode, emoji, Shift+Enter, global ESC, bounded mouse excursion and return')
 root.after(300,activate); root.after(500,check)
-root.after(10000,lambda:(failures.append(RuntimeError('Native integration timeout')),backend.close(),root.destroy()))
+root.after(30000,lambda:(failures.append(RuntimeError('Native integration timeout')),backend.close(),root.destroy()))
 root.mainloop()
 if failures: raise failures[0]

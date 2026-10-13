@@ -6,13 +6,14 @@ from localization import tr
 
 class ProfileControls(ctk.CTkFrame):
     def __init__(self,parent,app,kind,read_config,apply_config):
+        import auto_typer as style
         super().__init__(parent,fg_color='transparent')
         self.app=app;self.kind=kind;self.read_config=read_config;self.apply_config=apply_config
         self.store=ProfileStore();self.selected=None;self.items={}
         self.grid_columnconfigure(0,weight=1)
-        self.menu=ctk.CTkOptionMenu(self,values=[tr('profile.unsaved')],command=self.choose)
+        self.menu=ctk.CTkOptionMenu(self,values=[tr('profile.unsaved')],command=self.choose,fg_color=style.LINE,button_color=style.LINE,text_color=style.INK,dropdown_fg_color=style.PANEL,dropdown_text_color=style.INK)
         self.menu.grid(row=0,column=0,sticky='ew',padx=(0,8))
-        self.actions=ctk.CTkOptionMenu(self,values=[tr('profile.'+a) for a in ('save','rename','duplicate','delete','import','export')],command=self.act,width=125)
+        self.actions=ctk.CTkOptionMenu(self,values=[tr('profile.'+a) for a in ('save','rename','duplicate','delete','import','export')],command=self.act,width=125,fg_color=style.LINE,button_color=style.LINE,text_color=style.INK,dropdown_fg_color=style.PANEL,dropdown_text_color=style.INK)
         self.actions.set(tr('profile.save'));self.actions.grid(row=0,column=1)
         self.refresh()
     def refresh(self):
@@ -25,7 +26,7 @@ class ProfileControls(ctk.CTkFrame):
         except ValueError as exc:self.app.tell(tr('profile.error',error=exc),True)
     def choose(self,label):
         if label not in self.items:self.selected=None;return
-        profile=self.items[label];self.apply_config(profile['config']);self.selected=profile['id']
+        profile=self.items[label];self.selected=profile['id'];self.apply_config(profile['config']);self.menu.set(label)
     def dirty(self):
         if self.selected:
             selected=next((p for p in self.items.values() if p['id']==self.selected),None)

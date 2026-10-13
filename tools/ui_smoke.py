@@ -10,7 +10,9 @@ from preferences import Preferences
 from auto_typer import AutoTyper
 
 class FakeBackend:
-    def __init__(self): self.output=[];self.permitted=True
+    def __init__(self):
+        import threading
+        self.output=[];self.permitted=True;self.lock=threading.RLock();self.native_platform='darwin'
     def allowed(self): return self.permitted
     def listen_escape(self, callback): self.callback=callback
     def escape_healthy(self): return True
@@ -18,6 +20,15 @@ class FakeBackend:
     def newline(self): self.output.append('\n')
     def idle_seconds(self): return 0
     def micro_activity(self,f18,stop): return True
+    def display_layout(self):return [{'left':0,'top':0,'width':100,'height':100}]
+    def move_to(self,point):self.output.append(point)
+    def release_held_inputs(self):pass
+    def listen_events(self,callback,capture):
+        class Listener:
+            def stop(self):pass
+            def join(self,timeout=None):pass
+        callback('move',{'x':2,'y':3});callback('move',{'x':4,'y':5})
+        return Listener()
     def close(self): pass
 
 config_directory=tempfile.TemporaryDirectory()
@@ -97,5 +108,13 @@ app.restart_command=['missing-program'];app.closing=True
 with patch('auto_typer.subprocess.Popen',side_effect=OSError('test launch failure')):
     app.await_shutdown()
 assert app.root.winfo_exists() and not app.closing
+app.show_page('Macros');pump()
+app.macro_page.entries['start_delay'].delete(0,'end');app.macro_page.entries['start_delay'].insert(0,'0')
+app.macro_page.start_record();pump(.5);assert app.macro_active.is_set()
+app.start_typing();assert not app.typing_active.is_set()
+app.emergency_stop();pump_until(lambda:not app.macro_active.is_set())
+assert app.macro_page.draft and app.macro_page.draft.events[0].data=={'x':2,'y':3}
+app.macro_page.start_play();pump_until(lambda:not app.macro_active.is_set())
+assert app.backend.output[-1]==(2,3)
 assert not errors,errors
 app.close(); print('UI smoke PASS: minimum size, typing, jiggler, ESC, live permissions, intro persistence/replay, state-preserving restart, shutdown')

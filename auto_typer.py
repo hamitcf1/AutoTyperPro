@@ -70,6 +70,8 @@ class AutoTyper:
         self.typing_thread = None
         self.jiggler_thread = None
         self.typing_active = threading.Event()
+        self.macro_active=threading.Event();self.macro_stop=threading.Event();self.macro_events=queue.Queue();self.macro_thread=None
+        self.backend._activity_should_yield=lambda:self.typing_active.is_set() or self.macro_active.is_set()
         self.total = 0
         self.typed = 0
         self.active_config = None
@@ -123,7 +125,7 @@ class AutoTyper:
             self.root.iconbitmap(str(resource('assets/icon.ico')))
         self.label(header, 'AutoTyper', 20, weight='bold').grid(row=0, column=1, sticky='sw')
         self.label(header, 'PRO  /  DESKTOP TOOLS', 10, MUTED).grid(row=1, column=1, sticky='nw')
-        self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', tr('nav.activity'), tr('settings.title')], command=self.show_page, height=38, corner_radius=10, font=(FONT, 13), fg_color=PANEL, selected_color=LINE, selected_hover_color='#435447', unselected_color=PANEL, unselected_hover_color=LINE, text_color=INK, dynamic_resizing=False, width=365)
+        self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', tr('nav.activity'), tr('nav.macros'), tr('settings.title')], command=self.show_page, height=38, corner_radius=10, font=(FONT, 13), fg_color=PANEL, selected_color=LINE, selected_hover_color='#435447', unselected_color=PANEL, unselected_hover_color=LINE, text_color=INK, dynamic_resizing=False, width=410)
         self.nav.set('Auto Typer')
         self.nav.grid(row=0, column=2, rowspan=2, padx=14)
         self.activity_badge = self.label(header, tr('ui.4106acbcd32a'), 12, ACCENT)
@@ -146,6 +148,9 @@ class AutoTyper:
         self.jiggler_page = ctk.CTkFrame(self.body, fg_color='transparent')
         self.build_typer()
         self.build_jiggler()
+        self.macros_page = ctk.CTkFrame(self.body,fg_color='transparent')
+        from macro_page import MacroPage
+        self.macro_page=MacroPage(self,self.macros_page)
         self.settings_page = ctk.CTkFrame(self.body, fg_color='transparent')
         self.build_settings()
         self.typer_page.grid(row=0, column=0, sticky='nsew')
@@ -154,7 +159,8 @@ class AutoTyper:
         footer.grid_columnconfigure(0, weight=1)
         self.status = self.label(footer, tr('ui.a0f874cdf144'), 12, MUTED, wraplength=650, justify='left')
         self.status.grid(row=0, column=0, sticky='w')
-        self.status.configure(wraplength=520)
+        self.status.configure(wraplength=390)
+        self.button(footer,tr('ui.acc8c9e36f29')+' / ESC',self.emergency_stop,width=92,height=28).grid(row=0,column=3,padx=(12,0))
         self.button(footer, tr('ui.c568af74c1f8'), self.show_introduction, width=68, height=28).grid(row=0, column=1, padx=12)
         self.label(footer, tr('ui.5deac40c6ff6'), 11, MUTED).grid(row=0, column=2, sticky='e')
         if getattr(self,'pending_message',None):
@@ -240,7 +246,7 @@ class AutoTyper:
         self.newline_menu = ctk.CTkOptionMenu(options, values=[tr(key) if key else 'Shift + Enter' for key in NEWLINE_KEYS], command=self.newline_changed, height=36, fg_color=LINE, button_color=LINE, button_hover_color='#435447', dropdown_fg_color=PANEL, text_color=INK, font=(FONT, 13), corner_radius=8)
         self.newline_menu.set(tr(NEWLINE_KEYS[list(NEWLINES).index(self.newline.get())]) if self.newline.get() != 'shift_enter' else 'Shift + Enter')
         self.newline_menu.grid(row=11, column=0, sticky='ew', padx=16, pady=(8, 18))
-        self.switch(options, tr('ui.f5bed29f5be2'), self.sound).grid(row=12, column=0, sticky='w', padx=16, pady=(0, 18))
+        self.switch(options, tr('ui.f5bed29f5be2'), self.sound, lambda:self.preferences.update({'sound':self.sound.get()})).grid(row=12, column=0, sticky='w', padx=16, pady=(0, 18))
         for entry in (self.start_delay, self.min_delay, self.max_delay):
             entry.bind('<KeyRelease>', lambda _: self.update_stats())
         controls = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=14)
@@ -285,8 +291,8 @@ class AutoTyper:
 
     def show_page(self, value):
         self.page = value
-        pages = {'Auto Typer':self.typer_page, tr('nav.activity'):self.jiggler_page, 'Mouse Jiggler':self.jiggler_page, tr('settings.title'):self.settings_page}
-        for page in (self.typer_page,self.jiggler_page,self.settings_page): page.grid_remove()
+        pages = {'Auto Typer':self.typer_page, tr('nav.activity'):self.jiggler_page, 'Mouse Jiggler':self.jiggler_page, tr('nav.macros'):self.macros_page, tr('settings.title'):self.settings_page}
+        for page in (self.typer_page,self.jiggler_page,self.macros_page,self.settings_page): page.grid_remove()
         pages[value].grid(row=0,column=0,sticky='nsew')
 
     def tell(self, text, error=False):
@@ -323,15 +329,15 @@ class AutoTyper:
         self.tell(tr('ui.66a839ee48cf', v0=sys.executable), True)
 
     def show_introduction(self):
-        if self.closing or self.intro:
+        if self.closing or self.macro_active.is_set() or self.intro:
             return
-        if self.typing_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()):
+        if self.typing_active.is_set() or self.macro_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()):
             self.tell(tr('ui.3f7939b042e1'))
             return
         self.intro = Introduction(self)
 
     def snapshot(self):
-        return { 'text': self.text_input.get('1.0', 'end-1c'), 'speed': self.speed.get(), 'newline': self.newline.get(), 'natural': self.natural.get(), 'word_pauses': self.word_pauses.get(), 'sound': self.sound.get(), 'start_delay': self.start_delay.get(), 'min_delay': self.min_delay.get(), 'max_delay': self.max_delay.get(), 'idle': self.idle_entry.get(), 'interval': self.interval_entry.get(), 'activity':self.activity_page.snapshot()}
+        return { 'text': self.text_input.get('1.0', 'end-1c'), 'speed': self.speed.get(), 'newline': self.newline.get(), 'natural': self.natural.get(), 'word_pauses': self.word_pauses.get(), 'sound': self.sound.get(), 'start_delay': self.start_delay.get(), 'min_delay': self.min_delay.get(), 'max_delay': self.max_delay.get(), 'idle': self.idle_entry.get(), 'interval': self.interval_entry.get(), 'activity':self.activity_page.snapshot(), 'macro':self.macro_page.snapshot()}
 
     def apply_state(self, data):
         self.text_input.delete('1.0','end')
@@ -341,6 +347,7 @@ class AutoTyper:
         for name,key in [('start_delay','start_delay'),('min_delay','min_delay'),('max_delay','max_delay'),('idle_entry','idle'),('interval_entry','interval')]:
             if key in data:
                 entry=getattr(self,name);entry.delete(0,'end');entry.insert(0,str(data[key]))
+        if 'macro' in data:self.macro_page.restore(data['macro'])
         if 'activity' in data:self.activity_page.restore(data['activity'])
         elif 'f18' in data:self.activity_page.apply({'idle_threshold':float(data.get('idle',60)),'interval':float(data.get('interval',30)),'key':'f18' if data['f18'] else None})
         self.settings_changed()
@@ -369,7 +376,7 @@ class AutoTyper:
         self.button(panel,tr('settings.title')+' ↗',self.permission_action).pack(anchor='w',padx=24,pady=(0,24))
 
     def change_preferences(self, **values):
-        if self.typing_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()) or self.intro:
+        if self.typing_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()) or self.macro_active.is_set() or self.intro:
             self.tell(tr('settings.idle'));return
         state=self.snapshot()
         try: self.preferences.update(values)
@@ -384,6 +391,7 @@ class AutoTyper:
     def restart(self):
         if self.closing:
             return
+        if self.macro_active.is_set():self.tell(tr('macro.busy'));return
         token = secrets.token_urlsafe(32)
         state = self.snapshot(); state['_resume_token'] = token
         try:
@@ -451,6 +459,7 @@ class AutoTyper:
             self.update_stats()
 
     def update_stats(self):
+        if hasattr(self,'typing_profiles'):self.typing_profiles.dirty()
         text = self.text_input.get('1.0', 'end-1c')
         self.char_label.configure(text=tr('ui.763846500742', v0=len(text)))
         self.word_label.configure(text=tr('ui.a546d243d22f', v0=len(text.split())))
@@ -501,6 +510,7 @@ class AutoTyper:
             play_sound(name)
 
     def start_typing(self):
+        if self.macro_active.is_set() or (self.macro_thread and self.macro_thread.is_alive()):self.tell(tr('macro.busy'));return
         if self.typing_thread and self.typing_thread.is_alive():
             return
         text = self.text_input.get('1.0', 'end-1c')
@@ -542,6 +552,7 @@ class AutoTyper:
     def emergency_stop(self):
         self.typing_stop.set()
         self.jiggler_stop.set()
+        self.macro_stop.set()
 
     def finish_typing(self, kind, detail):
         self.typing_active.clear()
@@ -582,7 +593,7 @@ class AutoTyper:
         self.activity_page.set_busy(True)
         self.jig_state.configure(text=tr('ui.af33f69c2bde'))
         self.tell(tr('ui.57da60ba2169'))
-        self.jiggler_thread = threading.Thread(target=jiggle, args=(config, self.backend, self.jiggler_stop, self.typing_active.is_set, self.jiggler_events), daemon=True)
+        self.jiggler_thread = threading.Thread(target=jiggle, args=(config, self.backend, self.jiggler_stop, lambda:self.typing_active.is_set() or self.macro_active.is_set(), self.jiggler_events), daemon=True)
         self.jiggler_thread.start()
 
     def stop_jiggler(self):
@@ -641,6 +652,9 @@ class AutoTyper:
             self.jig_description.configure(text=tr('ui.294a25641801') if typing else tr('ui.5f615f507b9c'))
         else:
             self.jig_description.configure(text=tr('ui.39c13a156e82'))
+        self.macro_page.poll()
+        if self.macro_active.is_set():
+            self.activity_badge.configure(text=tr('macro.badge_recording') if self.macro_page.state=='recording' else tr('macro.badge_playing'))
         if listener_failed:
             self.tell(tr('ui.a69e776cd09f'), True)
         self.root.after(100, self.poll)
@@ -655,7 +669,7 @@ class AutoTyper:
         self.await_shutdown()
 
     def await_shutdown(self):
-        if any((t and t.is_alive() for t in (self.typing_thread, self.jiggler_thread, self.backend.listener if hasattr(self.backend, 'listener') else None))):
+        if any((t and t.is_alive() for t in (self.typing_thread, self.jiggler_thread, self.macro_thread, self.backend.listener if hasattr(self.backend, 'listener') else None))):
             self.root.after(30, self.await_shutdown)
         else:
             if self.restart_command:
