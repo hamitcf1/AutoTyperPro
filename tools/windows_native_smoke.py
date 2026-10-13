@@ -15,20 +15,29 @@ ancestor=bind(user,'GetAncestor',C.c_void_p,C.c_void_p,C.c_uint32)
 foreground=bind(user,'GetForegroundWindow',C.c_void_p)
 activate=bind(user,'SetForegroundWindow',C.c_bool,C.c_void_p)
 get_pid=bind(user,'GetWindowThreadProcessId',C.c_uint32,C.c_void_p,C.POINTER(C.c_uint32))
+key_state=bind(user,'GetAsyncKeyState',C.c_int16,C.c_int32)
+sys.stdout.reconfigure(encoding='utf-8')
 root=tk.Tk();root.title('AutoTyper Windows native test');root.geometry('640x280')
 text=tk.Text(root);text.pack(fill='both',expand=True)
+text.bind('<KeyPress>',lambda e:print('Target key:',e.keysym,repr(e.char),e.state,flush=True))
 results=queue.Queue();failures=[];escaped=threading.Event()
 backend.listen_escape(escaped.set)
 root.report_callback_exception=lambda kind,error,traceback:failures.append(error)
 expected='İıŞşĞğÜüÖöÇç 🙂\nWindows native input'
+def require_target():
+    pid=C.c_uint32();get_pid(foreground(),C.byref(pid))
+    if pid.value!=os.getpid():raise RuntimeError(f'Test lost foreground focus: expected {os.getpid()}, got {pid.value}')
+def modifiers():return {name:bool(key_state(code)&0x8000) for name,code in [('shift',0x10),('ctrl',0x11),('alt',0x12),('win',0x5B)]}
 def send():
     try:
         pid=C.c_uint32();get_pid(foreground(),C.byref(pid))
         if pid.value!=os.getpid():
             results.put('skip');return
-        for c in expected.split('\n')[0]:backend.write(c);time.sleep(.05)
-        backend.newline();time.sleep(.05)
-        for c in expected.split('\n')[1]:backend.write(c);time.sleep(.05)
+        print('Initial modifiers:',modifiers(),flush=True)
+        for c in expected.split('\n')[0]:require_target();backend.write(c);time.sleep(.05)
+        require_target();backend.newline();time.sleep(.15)
+        print('After newline modifiers:',modifiers(),flush=True)
+        for c in expected.split('\n')[1]:require_target();backend.write(c);time.sleep(.05)
         backend.press(0x1B)
         before=backend.position();backend.micro_activity(False,threading.Event());time.sleep(.15);after=backend.position()
         if (before.x,before.y)!=(after.x,after.y):raise RuntimeError('Cursor did not return or user moved it')
