@@ -10,6 +10,7 @@ class LocalizationTests(unittest.TestCase):
         self.assertEqual(english.text('settings.title'), 'Settings')
         self.assertEqual(turkish.text('settings.title'), 'Ayarlar')
         self.assertEqual(Translator('xx').text('settings.title'), 'Settings')
+        self.assertIn('f18', english.text('activity.summary', idle=60, interval=30, distance=1, key='f18'))
         catalogs = [json.loads((Path(__file__).parents[1]/'locales'/f'{code}.json').read_text()) for code in ('en','tr')]
         self.assertEqual(set(catalogs[0]), set(catalogs[1]))
         for key, value in catalogs[0].items():

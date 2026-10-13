@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import time
+import os
 import tempfile
 from unittest.mock import patch
 from preferences import Preferences
@@ -19,6 +20,9 @@ class FakeBackend:
     def micro_activity(self,f18,stop): return True
     def close(self): pass
 
+config_directory=tempfile.TemporaryDirectory()
+os.environ['AUTOTYPER_CONFIG_DIR']=config_directory.name
+Path(config_directory.name,'profiles.json').write_text('{broken')
 app=AutoTyper(show_intro=False); app.backend.close(); app.backend=FakeBackend()
 errors=[]
 app.root.report_callback_exception=lambda *args: errors.append(args)
@@ -45,6 +49,10 @@ with tempfile.TemporaryDirectory() as locale_dir:
 
 app.nav.set('Mouse Jiggler'); app.show_page('Mouse Jiggler'); pump()
 assert app.jig_start_btn.winfo_viewable()
+app.activity_page.select_preset('Balanced'); assert app.activity_page.config().distance==4
+app.activity_page.apply({'distance':12,'movement':'vertical_return','key':'f18','modifiers':['control']})
+assert app.activity_page.config().modifiers==('control',)
+app.activity_page.select_preset('Gentle · Recommended')
 app.start_jiggler(); pump(); assert app.jiggler_thread.is_alive()
 app.nav.set('Auto Typer'); app.show_page('Auto Typer'); pump()
 app.start_typing(); assert not app.typing_active.is_set()

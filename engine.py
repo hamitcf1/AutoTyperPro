@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import math
 import random
 import time
+from keycodes import SUPPORTED_KEYS, MODIFIERS
 
 def bounded(value, low, high, name):
     if not math.isfinite(value) or not low <= value <= high:
@@ -46,12 +47,27 @@ class TypingConfig:
 class JigglerConfig:
     idle_threshold: float = 60
     interval: float = 30
-    f18: bool = False
+    distance: float = 1
+    movement: str = 'horizontal_return'
+    duration_ms: float = 80
+    key: str | None = None
+    modifiers: tuple = ()
 
     def validate(self):
-        bounded(self.idle_threshold, 5, 3600, tr('ui.58c59e0809e6'))
-        bounded(self.interval, 5, 3600, tr('ui.b87c56b95fff'))
+        bounded(self.idle_threshold, 5, 3600, tr('activity.idle'))
+        bounded(self.interval, 5, 3600, tr('activity.interval'))
+        bounded(self.distance, 1, 100, tr('activity.distance'))
+        bounded(self.duration_ms, 50, 1000, tr('activity.duration'))
+        if self.movement not in ('off','horizontal_return','vertical_return','square'):
+            raise ValueError(tr('activity.invalid'))
+        if self.key is not None and self.key not in SUPPORTED_KEYS:
+            raise ValueError(tr('activity.invalid_key'))
+        if not isinstance(self.modifiers,(list,tuple)) or any(m not in MODIFIERS for m in self.modifiers) or len(set(self.modifiers)) != len(self.modifiers):
+            raise ValueError(tr('activity.invalid_key'))
+        if (self.modifiers and self.key is None) or (self.movement == 'off' and self.key is None):
+            raise ValueError(tr('activity.empty'))
         return self
+
 
 class JigglerSchedule:
 
@@ -102,7 +118,7 @@ def jiggle(config, backend, stop, typing_active, events):
             now = time.monotonic()
             idle = backend.idle_seconds()
             if schedule.due(now, idle, typing_active()):
-                if backend.micro_activity(config.f18, stop):
+                if backend.micro_activity(config, stop):
                     count += 1
                     events.put(('movement', count))
                 schedule.record(time.monotonic())

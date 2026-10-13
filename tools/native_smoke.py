@@ -34,6 +34,7 @@ def send():
         results.put(None)
     except Exception as exc: results.put(exc)
 def activate():
+    NSApplication.sharedApplication().setActivationPolicy_(0)
     NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
     root.lift(); text.focus_force()
     root.after(1000,lambda:threading.Thread(target=send,daemon=True).start())

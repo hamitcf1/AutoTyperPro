@@ -84,7 +84,6 @@ class AutoTyper:
         self.natural = ctk.BooleanVar(value=True)
         self.word_pauses = ctk.BooleanVar(value=False)
         self.sound = ctk.BooleanVar(value=prefs['sound'])
-        self.f18 = ctk.BooleanVar(value=False)
         self.setup_gui()
         self.root.bind('<Escape>', lambda _: self.emergency_stop())
         self.root.bind('<Command-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
@@ -158,6 +157,8 @@ class AutoTyper:
         self.status.configure(wraplength=520)
         self.button(footer, tr('ui.c568af74c1f8'), self.show_introduction, width=68, height=28).grid(row=0, column=1, padx=12)
         self.label(footer, tr('ui.5deac40c6ff6'), 11, MUTED).grid(row=0, column=2, sticky='e')
+        if getattr(self,'pending_message',None):
+            self.tell(*self.pending_message);self.pending_message=None
         self.mutable_typing = [self.speed_menu, self.newline_menu, self.start_delay, self.min_delay, self.max_delay, self.natural_switch, self.pause_switch, self.paste_btn, self.clear_btn]
 
     def page_title(self, page, number, title, description):
@@ -176,7 +177,7 @@ class AutoTyper:
         editor = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=16)
         editor.grid(row=1, column=0, sticky='nsew', padx=(0, 18))
         editor.grid_columnconfigure(0, weight=1)
-        editor.grid_rowconfigure(1, weight=1)
+        editor.grid_rowconfigure(2, weight=1)
         toolbar = ctk.CTkFrame(editor, fg_color='transparent')
         toolbar.grid(row=0, column=0, sticky='ew', padx=20, pady=(16, 10))
         toolbar.grid_columnconfigure(0, weight=1)
@@ -188,13 +189,17 @@ class AutoTyper:
         self.clear_btn = self.button(toolbar, tr('ui.021e6221a5d4'), self.clear_text, width=70)
         self.clear_btn.grid(row=0, column=3, padx=(4, 0))
         self.text_input = ctk.CTkTextbox(editor, fg_color=INSET, corner_radius=10, border_width=1, border_color=LINE, font=(FONT, 16), text_color=INK, wrap='word', spacing1=5, spacing3=5)
-        self.text_input.grid(row=1, column=0, sticky='nsew', padx=16, pady=(0, 12))
+        from profile_controls import ProfileControls
+        from dataclasses import asdict
+        self.typing_profiles=ProfileControls(editor,self,'typing',lambda:asdict(self.config()),self.apply_typing_profile)
+        self.typing_profiles.grid(row=1,column=0,sticky='ew',padx=20,pady=(0,12))
+        self.text_input.grid(row=2, column=0, sticky='nsew', padx=16, pady=(0, 12))
         self.text_input.bind('<<Modified>>', self.on_modified)
         self.empty_hint = self.label(self.text_input, tr('ui.2247f277c900'), 15, MUTED, justify='left')
         self.empty_hint.place(x=24, y=26)
         self.empty_hint.bind('<Button-1>', lambda _: self.text_input.focus_set())
         stats = ctk.CTkFrame(editor, fg_color='transparent')
-        stats.grid(row=2, column=0, sticky='ew', padx=20, pady=(0, 16))
+        stats.grid(row=3, column=0, sticky='ew', padx=20, pady=(0, 16))
         self.char_label = self.label(stats, tr('ui.3ce6e9f2cf64'), 12, MUTED)
         self.char_label.pack(side='left')
         self.word_label = self.label(stats, tr('ui.4d684b0e11da'), 12, MUTED)
@@ -253,66 +258,17 @@ class AutoTyper:
         self.start_btn = self.button(controls, tr('ui.bb28d782799a'), self.start_typing, primary=True, width=178)
         self.start_btn.grid(row=0, column=2, rowspan=2, padx=(0, 20))
 
+    def apply_typing_profile(self, data):
+        config=TypingConfig(**data).validate()
+        self.speed.set(next(k for k,v in SPEEDS.items() if v==config.delay_ms))
+        self.newline.set(config.newline);self.natural.set(config.natural);self.word_pauses.set(config.word_pauses)
+        for name,value in [('start_delay',config.start_delay),('min_delay',config.min_ms),('max_delay',config.max_ms)]:
+            entry=getattr(self,name);entry.delete(0,'end');entry.insert(0,str(value))
+        self.settings_changed();self.newline_menu.set(tr(NEWLINE_KEYS[list(NEWLINES).index(config.newline)]) if config.newline!='shift_enter' else 'Shift + Enter')
+
     def build_jiggler(self):
-        page = self.jiggler_page
-        page.grid_columnconfigure(0, weight=1)
-        page.grid_columnconfigure(1, minsize=300)
-        page.grid_rowconfigure(1, weight=1)
-        self.page_title(page, '02  /  MOUSE JIGGLER', tr('ui.5515cdfb9f19'), tr('ui.e23794348c8a'))
-        hero = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=16)
-        hero.grid(row=1, column=0, sticky='nsew', padx=(0, 18))
-        hero.grid_columnconfigure(0, weight=1)
-        hero.grid_rowconfigure(0, weight=1)
-        self.canvas = tk.Canvas(hero, bg=PANEL, highlightthickness=0, height=200)
-        self.canvas.grid(row=0, column=0, sticky='nsew', padx=16, pady=(16, 0))
-        self.canvas.bind('<Configure>', self.draw_cursor)
-        self.jig_state = self.label(hero, tr('ui.3f5d205071b3'), 25, weight='bold')
-        self.jig_state.grid(row=1, column=0, pady=(2, 6))
-        self.jig_description = self.label(hero, tr('ui.39c13a156e82'), 13, MUTED)
-        self.jig_description.grid(row=2, column=0, pady=(0, 24))
-        stats = ctk.CTkFrame(hero, fg_color=INSET, corner_radius=12)
-        stats.grid(row=3, column=0, sticky='ew', padx=24, pady=(0, 24))
-        stats.grid_columnconfigure((0, 1, 2), weight=1)
-        self.elapsed_label = self.label(stats, '00:00', 24, ACCENT)
-        self.elapsed_label.grid(row=0, column=0, pady=(16, 3))
-        self.moves_label = self.label(stats, '0', 24, ACCENT)
-        self.moves_label.grid(row=0, column=1, pady=(16, 3))
-        self.idle_label = self.label(stats, '00:00', 24, ACCENT)
-        self.idle_label.grid(row=0, column=2, pady=(16, 3))
-        for i, title in enumerate((tr('ui.799117ff2b64'), tr('ui.a6726919b04a'), tr('ui.38ca04d61b74'))):
-            self.label(stats, title, 11, MUTED).grid(row=1, column=i, pady=(0, 16))
-        settings = ctk.CTkScrollableFrame(page, fg_color=PANEL, corner_radius=16, width=280)
-        settings.grid(row=1, column=1, sticky='nsew')
-        settings.grid_columnconfigure(0, weight=1)
-        self.label(settings, tr('ui.51c9d15836e4'), 17, weight='bold').grid(row=0, column=0, sticky='w', padx=22, pady=(22, 24))
-        self.label(settings, tr('ui.46e9a48c0d46'), 13).grid(row=1, column=0, sticky='w', padx=22)
-        row = ctk.CTkFrame(settings, fg_color='transparent')
-        row.grid(row=2, column=0, sticky='w', padx=22, pady=(8, 8))
-        self.idle_entry = self.entry(row, 60, 100)
-        self.idle_entry.pack(side='left')
-        self.label(row, tr('ui.b5e442d69d76'), 12, MUTED).pack(side='left', padx=8)
-        self.label(settings, tr('ui.664426564453'), 11, MUTED).grid(row=3, column=0, sticky='w', padx=22)
-        self.label(settings, tr('ui.b87c56b95fff'), 13).grid(row=4, column=0, sticky='w', padx=22, pady=(24, 0))
-        row = ctk.CTkFrame(settings, fg_color='transparent')
-        row.grid(row=5, column=0, sticky='w', padx=22, pady=(8, 8))
-        self.interval_entry = self.entry(row, 30, 100)
-        self.interval_entry.pack(side='left')
-        self.label(row, tr('ui.b5e442d69d76'), 12, MUTED).pack(side='left', padx=8)
-        self.label(settings, tr('ui.0775f1b844fe'), 11, MUTED).grid(row=6, column=0, sticky='w', padx=22)
-        ctk.CTkFrame(settings, height=1, fg_color=LINE).grid(row=7, column=0, sticky='ew', padx=22, pady=24)
-        self.f18_switch = self.switch(settings, tr('ui.34319eb8d8ea'), self.f18)
-        self.f18_switch.grid(row=8, column=0, sticky='w', padx=22)
-        self.label(settings, tr('ui.598942406e8f'), 11, MUTED, justify='left').grid(row=9, column=0, sticky='w', padx=22, pady=(10, 20))
-        self.label(settings, tr('ui.aafc9c30a575'), 12, ACCENT, justify='left').grid(row=10, column=0, sticky='w', padx=22, pady=(0, 20))
-        controls = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=14)
-        controls.grid(row=2, column=0, columnspan=2, sticky='ew', pady=(16, 0))
-        controls.grid_columnconfigure(0, weight=1)
-        self.label(controls, tr('ui.f2944a83ef76'), 15, weight='bold').grid(row=0, column=0, sticky='w', padx=20, pady=(18, 4))
-        self.label(controls, tr('ui.1bebefb439ae'), 12, MUTED).grid(row=1, column=0, sticky='w', padx=20, pady=(0, 18))
-        self.jig_stop_btn = self.button(controls, tr('ui.acc8c9e36f29'), self.stop_jiggler, width=90, state='disabled')
-        self.jig_stop_btn.grid(row=0, column=1, rowspan=2, padx=8)
-        self.jig_start_btn = self.button(controls, tr('ui.add7f870808d'), self.start_jiggler, primary=True, width=178)
-        self.jig_start_btn.grid(row=0, column=2, rowspan=2, padx=(0, 20))
+        from activity_page import ActivityPage
+        self.activity_page = ActivityPage(self,self.jiggler_page)
 
     def draw_cursor(self, event=None):
         canvas = self.canvas
@@ -325,7 +281,7 @@ class AutoTyper:
         canvas.create_line(x - 122, y, x - 106, y, fill=ACCENT, width=2)
         canvas.create_line(x + 106, y, x + 122, y, fill=ACCENT, width=2)
         canvas.create_polygon(x - 18, y - 31, x - 18, y + 29, x - 3, y + 15, x + 10, y + 39, x + 22, y + 33, x + 8, y + 10, x + 30, y + 9, fill=ACCENT, outline=INK, width=2)
-        canvas.create_text(x + 74, y - 57, text='1 pt', fill=MUTED, font=(FONT, 11))
+        canvas.create_text(x + 74, y - 57, text=f'{self.activity_page.entries["distance"].get()} pt', fill=MUTED, font=(FONT, 11))
 
     def show_page(self, value):
         self.page = value
@@ -334,6 +290,8 @@ class AutoTyper:
         pages[value].grid(row=0,column=0,sticky='nsew')
 
     def tell(self, text, error=False):
+        if not hasattr(self,'status') or not self.status.winfo_exists():
+            self.pending_message=(text,error);return
         self.status.configure(text=text, text_color=DANGER if error else MUTED)
 
     def check_permissions(self):
@@ -373,16 +331,18 @@ class AutoTyper:
         self.intro = Introduction(self)
 
     def snapshot(self):
-        return { 'text': self.text_input.get('1.0', 'end-1c'), 'speed': self.speed.get(), 'newline': self.newline.get(), 'natural': self.natural.get(), 'word_pauses': self.word_pauses.get(), 'sound': self.sound.get(), 'start_delay': self.start_delay.get(), 'min_delay': self.min_delay.get(), 'max_delay': self.max_delay.get(), 'idle': self.idle_entry.get(), 'interval': self.interval_entry.get(), 'f18': self.f18.get()}
+        return { 'text': self.text_input.get('1.0', 'end-1c'), 'speed': self.speed.get(), 'newline': self.newline.get(), 'natural': self.natural.get(), 'word_pauses': self.word_pauses.get(), 'sound': self.sound.get(), 'start_delay': self.start_delay.get(), 'min_delay': self.min_delay.get(), 'max_delay': self.max_delay.get(), 'idle': self.idle_entry.get(), 'interval': self.interval_entry.get(), 'activity':self.activity_page.snapshot()}
 
     def apply_state(self, data):
         self.text_input.delete('1.0','end')
         self.text_input.insert('1.0',data.get('text',''))
-        for name in ('speed','newline','natural','word_pauses','sound','f18'):
+        for name in ('speed','newline','natural','word_pauses','sound'):
             if name in data: getattr(self,name).set(data[name])
         for name,key in [('start_delay','start_delay'),('min_delay','min_delay'),('max_delay','max_delay'),('idle_entry','idle'),('interval_entry','interval')]:
             if key in data:
                 entry=getattr(self,name);entry.delete(0,'end');entry.insert(0,str(data[key]))
+        if 'activity' in data:self.activity_page.restore(data['activity'])
+        elif 'f18' in data:self.activity_page.apply({'idle_threshold':float(data.get('idle',60)),'interval':float(data.get('interval',30)),'key':'f18' if data['f18'] else None})
         self.settings_changed()
         self.newline_menu.set(tr(NEWLINE_KEYS[list(NEWLINES).index(self.newline.get())]) if self.newline.get() != 'shift_enter' else 'Shift + Enter')
 
@@ -570,6 +530,7 @@ class AutoTyper:
         self.progress.set(0)
         self.tell(tr('ui.59f04116a871'))
         self.typing_thread = threading.Thread(target=type_text, args=(text, config, self.backend, self.typing_stop, self.typing_events), daemon=True)
+        self.typing_profiles.set_busy(True)
         self.typing_thread.start()
 
     def stop_typing(self):
@@ -587,6 +548,7 @@ class AutoTyper:
         self.text_input.configure(state='normal')
         for widget in self.mutable_typing:
             widget.configure(state='normal')
+        self.typing_profiles.set_busy(False)
         self.start_btn.configure(state='normal')
         self.stop_btn.configure(state='disabled')
         labels = {'finished': tr('ui.f126dc372247'), 'stopped': tr('ui.c7b4913020e6'), 'error': tr('ui.3bc412609217')}
@@ -604,7 +566,7 @@ class AutoTyper:
             self.tell('Mouse Jiggler macOS ve Windows gerektirir.', True)
             return
         try:
-            config = JigglerConfig(float(self.idle_entry.get()), float(self.interval_entry.get()), self.f18.get()).validate()
+            config = self.activity_page.config()
         except ValueError as exc:
             self.tell(str(exc) if tr('ui.394f23ccbfb7') in str(exc) else tr('ui.e59279d6ec9f'), True)
             return
@@ -617,8 +579,7 @@ class AutoTyper:
         self.moves_label.configure(text='0')
         self.jig_start_btn.configure(state='disabled')
         self.jig_stop_btn.configure(state='normal')
-        for widget in (self.idle_entry, self.interval_entry, self.f18_switch):
-            widget.configure(state='disabled')
+        self.activity_page.set_busy(True)
         self.jig_state.configure(text=tr('ui.af33f69c2bde'))
         self.tell(tr('ui.57da60ba2169'))
         self.jiggler_thread = threading.Thread(target=jiggle, args=(config, self.backend, self.jiggler_stop, self.typing_active.is_set, self.jiggler_events), daemon=True)
@@ -670,8 +631,7 @@ class AutoTyper:
                 self.jig_state.configure(text=tr('ui.f4dc30229a90') if kind == 'jiggler_stopped' else tr('ui.c56abb595b97'))
                 self.jig_start_btn.configure(state='normal')
                 self.jig_stop_btn.configure(state='disabled')
-                for widget in (self.idle_entry, self.interval_entry, self.f18_switch):
-                    widget.configure(state='normal')
+                self.activity_page.set_busy(False)
                 self.tell(value if kind == 'jiggler_error' else tr('ui.8b10cdb83c0e'), kind == 'jiggler_error')
         jig_active = bool(self.jiggler_thread and self.jiggler_thread.is_alive())
         typing = self.typing_active.is_set()

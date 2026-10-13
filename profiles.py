@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import uuid
 from engine import TypingConfig, JigglerConfig
+from activity import migrate_activity
 from preferences import atomic_json, config_directory
 
 
@@ -21,7 +22,7 @@ def validate_profile(data):
         kind = data['kind']; config = data['config']
         if kind not in ('typing','activity') or not isinstance(config,dict): raise ValueError('Invalid profile type')
         config_type = TypingConfig if kind == 'typing' else JigglerConfig
-        validated = config_type(**config).validate()
+        validated = config_type(**(migrate_activity(config) if kind == 'activity' else config)).validate()
         return {'id':data['id'],'name':name.strip(),'kind':kind,'config':asdict(validated)}
     except (KeyError,TypeError,AttributeError,OverflowError) as exc:
         raise ValueError('Invalid profile') from exc
@@ -45,11 +46,12 @@ class ProfileStore:
         atomic_json(self.path, {'schema':1,'profiles':items})
     def delete(self,identity):
         atomic_json(self.path, {'schema':1,'profiles':[item for item in self.load() if item['id'] != identity]})
-    def import_file(self,path):
+    def import_file(self,path,expected_kind=None):
         try:
             data = json.loads(Path(path).read_text(encoding='utf-8'))
             if not isinstance(data,dict) or data.get('schema') != 1: raise ValueError('Unsupported profile file')
             profile = validate_profile(data['profile'])
+            if expected_kind is not None and profile['kind'] != expected_kind: raise ValueError('Wrong profile type')
         except (OSError,ValueError,KeyError,TypeError) as exc: raise ValueError('Invalid profile file') from exc
         self.save(profile)
         return profile

@@ -12,7 +12,7 @@ class FakeWindows(WindowsBackend):
         return WinPoint(99,20) if self.calls==1 else WinPoint(50,50) if self.moved else WinPoint(98,20)
     def monitor_at(self,point,flags):return 1
     def monitor_info(self,handle,info):info._obj.monitor=WinRect(0,0,100,100);return True
-    def move_to(self,point):self.moves.append((point.x,point.y))
+    def move_to(self,point):self.moves.append(tuple(point) if isinstance(point,tuple) else (point.x,point.y))
 
 class WindowsTests(unittest.TestCase):
     def test_physical_keys_include_hardware_scan_codes(self):

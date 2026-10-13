@@ -6,6 +6,10 @@ import subprocess
 import sys
 import threading
 import time
+from activity import perform_activity, xy
+from engine import JigglerConfig
+from native_keys import KeyChordMixin
+from keycodes import MAC_MODIFIER_FLAGS
 
 class Point(C.Structure):
     _fields_ = [('x', C.c_double), ('y', C.c_double)]
@@ -108,7 +112,8 @@ class MacEscapeListener(threading.Thread):
     def stop(self):
         self._stop_event.set()
 
-class MacBackend:
+class MacBackend(KeyChordMixin):
+    native_platform = 'darwin'
 
     def __init__(self):
         self.cg = C.CDLL('/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics')
@@ -131,7 +136,7 @@ class MacBackend:
         self.idle = bind(self.cg, 'CGEventSourceSecondsSinceLastEventType', C.c_double, C.c_int32, C.c_uint32)
         self.displays = bind(self.cg, 'CGGetDisplaysWithPoint', C.c_int32, Point, C.c_uint32, C.POINTER(C.c_uint32), C.POINTER(C.c_uint32))
         self.bounds = bind(self.cg, 'CGDisplayBounds', Rect, C.c_uint32)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.listener = None
 
     def allowed(self):
@@ -205,29 +210,33 @@ class MacBackend:
     def idle_seconds(self):
         return self.idle(1, 4294967295)
 
-    def micro_activity(self, f18, stop):
+    def screen_bounds(self, origin):
+        origin=Point(*xy(origin)); display=C.c_uint32();count=C.c_uint32()
+        if self.displays(origin,1,C.byref(display),C.byref(count)) != 0 or not count.value:
+            raise RuntimeError(tr('input.no_display'))
+        bounds=self.bounds(display.value)
+        return bounds.origin.x,bounds.origin.y,bounds.origin.x+bounds.size.width,bounds.origin.y+bounds.size.height
+
+    def move_to(self, point):
+        self.require_permission()
+        self.send(self.mouse(None,5,Point(*xy(point)),0))
+
+    def physical_key_event(self,code,down):
         self.require_permission()
         with self.lock:
-            if stop.is_set():
-                return False
-            origin = self.position()
-            display = C.c_uint32()
-            count = C.c_uint32()
-            if self.displays(origin, 1, C.byref(display), C.byref(count)) != 0 or not count.value:
-                raise RuntimeError(tr('ui.fd9930971d87'))
-            bounds = self.bounds(display.value)
-            x = min(origin.x + 1, bounds.origin.x + bounds.size.width - 1)
-            if x == origin.x:
-                x = max(bounds.origin.x, origin.x - 1)
-            target = Point(x, origin.y)
-            self.send(self.mouse(None, 5, target, 0))
-            stop.wait(0.08)
-            current = self.position()
-            if abs(current.x - target.x) < 0.25 and abs(current.y - target.y) < 0.25:
-                self.send(self.mouse(None, 5, origin, 0))
-        if f18 and (not stop.is_set()):
-            self.press(79)
-        return True
+            if not hasattr(self,'_held_keys'):self._held_keys=set()
+            if down:self._held_keys.add(code)
+            else:self._held_keys.discard(code)
+            event=self.key(None,code,down)
+            if not event:raise RuntimeError(tr('input.key_event'))
+            flags=0
+            for held in self._held_keys:flags |= MAC_MODIFIER_FLAGS.get(held,0)
+            self.flags(event,flags);self.send(event)
+
+    def micro_activity(self,config,stop):
+        self.require_permission()
+        if isinstance(config,bool):config=JigglerConfig(key='f18' if config else None)
+        with self.lock:return perform_activity(self,config,stop)
 
     def listen_escape(self, callback):
         self.listener = MacEscapeListener(callback)
@@ -328,7 +337,8 @@ class InputUnion(C.Union):
 class Input(C.Structure):
     _fields_ = [('kind', C.c_uint32), ('payload', InputUnion)]
 
-class WindowsBackend(DesktopBackend):
+class WindowsBackend(KeyChordMixin, DesktopBackend):
+    native_platform = 'win32'
 
     def __init__(self):
         super().__init__()
@@ -342,7 +352,7 @@ class WindowsBackend(DesktopBackend):
         self.metric = bind(user, 'GetSystemMetrics', C.c_int32, C.c_int32)
         self.send_input = bind(user, 'SendInput', C.c_uint32, C.c_uint32, C.POINTER(Input), C.c_int32)
         self.scan_code = bind(user, 'MapVirtualKeyW', C.c_uint32, C.c_uint32, C.c_uint32)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
 
     def keyboard_events(self, events):
         for event in events:
@@ -385,6 +395,7 @@ class WindowsBackend(DesktopBackend):
         return point
 
     def move_to(self, point):
+        point=WinPoint(*map(round,xy(point)))
         left, top, width, height = (self.metric(i) for i in (76, 77, 78, 79))
         if width <= 1 or height <= 1:
             raise RuntimeError(tr('ui.fd9930971d87'))
@@ -394,23 +405,20 @@ class WindowsBackend(DesktopBackend):
         if self.send_input(1, C.byref(event), C.sizeof(Input)) != 1:
             raise RuntimeError(tr('ui.aca15376aca9'))
 
-    def micro_activity(self, f18, stop):
+    def screen_bounds(self,point):
+        point=WinPoint(*map(round,xy(point)))
+        info=MonitorInfo();info.size=C.sizeof(info)
+        if not self.monitor_info(self.monitor_at(point,2),C.byref(info)):
+            raise RuntimeError(tr('input.no_display'))
+        return info.monitor.left,info.monitor.top,info.monitor.right,info.monitor.bottom
+
+    def physical_key_event(self,code,down):
         with self.lock:
-            if stop.is_set():
-                return False
-            origin = self.position()
-            monitor = self.monitor_at(origin, 2)
-            info = MonitorInfo()
-            info.size = C.sizeof(MonitorInfo)
-            if not self.monitor_info(monitor, C.byref(info)):
-                raise RuntimeError(tr('ui.fd9930971d87'))
-            x = origin.x + 1 if origin.x + 1 < info.monitor.right else origin.x - 1
-            target = WinPoint(max(info.monitor.left, x), origin.y)
-            self.move_to(target)
-            stop.wait(0.08)
-            current = self.position()
-            if current.x == target.x and current.y == target.y:
-                self.move_to(origin)
-        if f18 and (not stop.is_set()):
-            self.press(129)
-        return True
+            if not hasattr(self,'_held_keys'):self._held_keys=set()
+            if down:self._held_keys.add(code)
+            self.keyboard_events([(code,0,0 if down else 2)])
+            if not down:self._held_keys.discard(code)
+
+    def micro_activity(self,config,stop):
+        if isinstance(config,bool):config=JigglerConfig(key='f18' if config else None)
+        with self.lock:return perform_activity(self,config,stop)
