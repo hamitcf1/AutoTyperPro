@@ -277,17 +277,18 @@ class AutoTyper:
         self.activity_page = ActivityPage(self,self.jiggler_page)
 
     def draw_cursor(self, event=None):
-        canvas = self.canvas
-        canvas.delete('all')
-        x = canvas.winfo_width() / 2
-        y = canvas.winfo_height() / 2
-        for r, color in ((94, '#222E26'), (69, '#29382D'), (44, '#354C3A')):
-            canvas.create_oval(x - r, y - r, x + r, y + r, fill=color, outline='')
-        canvas.create_oval(x - 95, y - 95, x + 95, y + 95, outline='#3A5140', dash=(3, 8))
-        canvas.create_line(x - 122, y, x - 106, y, fill=ACCENT, width=2)
-        canvas.create_line(x + 106, y, x + 122, y, fill=ACCENT, width=2)
-        canvas.create_polygon(x - 18, y - 31, x - 18, y + 29, x - 3, y + 15, x + 10, y + 39, x + 22, y + 33, x + 8, y + 10, x + 30, y + 9, fill=ACCENT, outline=INK, width=2)
-        canvas.create_text(x + 74, y - 57, text=f'{self.activity_page.entries["distance"].get()} pt', fill=MUTED, font=(FONT, 11))
+        canvas=self.canvas;canvas.delete('all')
+        x=canvas.winfo_width()/2;y=canvas.winfo_height()/2
+        scale=min(1,max(.35,(canvas.winfo_height()-12)/190))
+        for radius,color in ((94,'#222E26'),(69,'#29382D'),(44,'#354C3A')):
+            r=radius*scale;canvas.create_oval(x-r,y-r,x+r,y+r,fill=color,outline='')
+        r=95*scale;canvas.create_oval(x-r,y-r,x+r,y+r,outline='#3A5140',dash=(3,8))
+        for side in (-1,1):canvas.create_line(x+side*122*scale,y,x+side*106*scale,y,fill=ACCENT,width=2)
+        shape=[(-18,-31),(-18,29),(-3,15),(10,39),(22,33),(8,10),(30,9)]
+        canvas.create_polygon(*[value for dx,dy in shape for value in (x+dx*scale,y+dy*scale)],fill=ACCENT,outline=INK,width=2)
+        distance='1'
+        if hasattr(self,'activity_page') and self.activity_page.entries['distance'].winfo_exists():distance=self.activity_page.entries['distance'].get()
+        canvas.create_text(x+74*scale,y-57*scale,text=distance+' pt',fill=MUTED,font=(FONT,11))
 
     def show_page(self, value):
         self.page = value

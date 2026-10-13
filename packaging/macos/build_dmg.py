@@ -1,5 +1,6 @@
 """Build a branded DMG without GUI automation or Finder scripts."""
 import os
+import sys
 from pathlib import Path
 import platform
 import plistlib
@@ -12,11 +13,13 @@ from mac_alias import Alias
 from PIL import Image
 
 root=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(root))
+from preferences import VERSION
 app=root/'dist/AutoTyperPro.app'
 if not app.is_dir():raise SystemExit('Build AutoTyperPro.app first.')
 output=root/'dist/installers';output.mkdir(exist_ok=True)
 arch='arm64' if platform.machine()=='arm64' else 'x64'
-target=output/f'AutoTyperPro-2.1.0-macos-{arch}.dmg'
+target=output/f'AutoTyperPro-{VERSION}-macos-{arch}.dmg'
 mount=None
 with tempfile.TemporaryDirectory(prefix='autotyper-dmg-') as temp:
     temp=Path(temp);writable=temp/'install.dmg'

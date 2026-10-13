@@ -1,6 +1,6 @@
 # AutoTyper Pro 3.0 — global product design
 
-Status: proposed design for review, not a description of the shipped 2.1 release.
+Status: approved design. Source implementation is complete; cross-platform release verification is tracked separately. The published 2.1 release does not contain these features.
 
 ## Purpose and scope
 
@@ -66,4 +66,4 @@ Public macOS signing/notarization requires a suitable Developer ID identity; a l
 - Controlled native targets verify Unicode, keyboard combinations, mouse movement, recording/playback and cancellation on the tested platforms.
 - Installer files, version metadata, release notes and checksums agree; public download links work. Actual platform verification and signing limitations are documented.
 
-Implementation and a new release begin after this design and the corresponding implementation plan are reviewed. The shipped release remains 2.1.0 until replacement artifacts have passed their required checks.
+The owner approved this design and the implementation plan. A new installer release requires the platform checks above to succeed. The shipped release remains 2.1.0 until replacement artifacts have passed their required checks.

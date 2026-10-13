@@ -27,12 +27,12 @@ class MacroPage:
         self.info=app.label(main,tr('macro.empty'),12,style.MUTED,wraplength=500);self.info.grid(row=1,column=0,sticky='w',padx=20,pady=(0,12))
         self.canvas=tk.Canvas(main,height=190,bg=style.INSET,highlightthickness=0);self.canvas.grid(row=2,column=0,sticky='ew',padx=20);self.canvas.bind('<Configure>',lambda e:self.draw_preview())
         app.label(main,tr('macro.capture'),14,weight='bold').grid(row=3,column=0,sticky='w',padx=20,pady=(20,10))
-        options=ctk.CTkFrame(main,fg_color='transparent');options.grid(row=4,column=0,sticky='ew',padx=20)
+        options=ctk.CTkFrame(main,fg_color='transparent');options.grid(row=5,column=0,sticky='ew',padx=20)
         self.capture={}
         for i,key in enumerate(('move','button','key','scroll')):
             var=ctk.BooleanVar(value=key=='move');self.capture[key]=var
-            widget=ctk.CTkCheckBox(options,text=tr('macro.capture_'+key),variable=var,font=(style.FONT,12));widget.grid(row=i//2,column=i%2,sticky='w',padx=(0,20),pady=6);self.mutable.append(widget)
-        app.label(main,tr('macro.keyboard_notice'),11,style.MUTED,wraplength=500,justify='left').grid(row=5,column=0,sticky='w',padx=20,pady=(8,14))
+            widget=ctk.CTkCheckBox(options,text=tr('macro.capture_'+key),variable=var,font=(style.FONT,12),fg_color=style.ACCENT,hover_color=style.HOVER,checkmark_color=style.BG,text_color=style.INK);widget.grid(row=i//2,column=i%2,sticky='w',padx=(0,20),pady=6);self.mutable.append(widget)
+        app.label(main,tr('macro.keyboard_notice'),11,style.MUTED,wraplength=500,justify='left').grid(row=4,column=0,sticky='w',padx=20,pady=(0,10))
         options=ctk.CTkFrame(main,fg_color='transparent');options.grid(row=6,column=0,sticky='ew',padx=20,pady=(0,20))
         self.entries={}
         for i,(name,label,default) in enumerate([('start_delay','macro.delay',3),('repeats','macro.repeats',1),('repeat_delay','macro.gap',0)]):
@@ -41,7 +41,7 @@ class MacroPage:
         app.label(options,tr('macro.speed'),11,style.MUTED).grid(row=2,column=0,sticky='w',pady=(8,0))
         self.speed=ctk.CTkOptionMenu(options,values=['0.25×','0.5×','1×','2×','4×'],width=90,fg_color=style.LINE,button_color=style.LINE,text_color=style.INK,dropdown_fg_color=style.PANEL,dropdown_text_color=style.INK);self.speed.set('1×');self.speed.grid(row=3,column=0,sticky='w',pady=8);self.mutable.append(self.speed)
         self.fit=ctk.BooleanVar(value=False)
-        fit=ctk.CTkCheckBox(options,text=tr('macro.fit'),variable=self.fit,font=(style.FONT,11));fit.grid(row=3,column=1,columnspan=2,sticky='w',padx=16);self.mutable.append(fit)
+        fit=ctk.CTkCheckBox(options,text=tr('macro.fit'),variable=self.fit,font=(style.FONT,11),fg_color=style.ACCENT,hover_color=style.HOVER,checkmark_color=style.BG,text_color=style.INK);fit.grid(row=3,column=1,columnspan=2,sticky='w',padx=16);self.mutable.append(fit)
         controls=ctk.CTkFrame(page,fg_color=style.PANEL,corner_radius=14);controls.grid(row=2,column=0,columnspan=2,sticky='ew',pady=(14,0));controls.grid_columnconfigure(0,weight=1)
         self.status=app.label(controls,tr('macro.ready'),12,style.MUTED,wraplength=360);self.status.grid(row=0,column=0,sticky='w',padx=18,pady=18)
         self.stop_button=app.button(controls,tr('ui.acc8c9e36f29'),self.stop,width=75,state='disabled');self.stop_button.grid(row=0,column=1,padx=6)

@@ -1,4 +1,6 @@
-#define AppVersion "2.1.0"
+#ifndef AppVersion
+  #error Pass /DAppVersion with the application VERSION value.
+#endif
 [Setup]
 AppId={{97B412B1-0916-4D2C-91D0-385F173F699A}
 AppName=AutoTyper Pro

@@ -1,26 +1,24 @@
-## AutoTyper Pro 2.1.0
+## AutoTyper Pro 3.0.0
 
-A local desktop toolkit for automatic typing and idle-triggered mouse activity, with a redesigned Turkish interface.
+English-first desktop tools for typing, Mouse Jiggler / Anti-AFK and explicit local macro recording.
 
-### Downloads
-- **Apple Silicon Mac (M1/M2/M3/M4/M5):** `AutoTyperPro-2.1.0-macos-arm64.dmg`
-- **Intel Mac:** `AutoTyperPro-2.1.0-macos-x64.dmg`
-- **Windows 10/11 x64 installer:** `AutoTyperPro-2.1.0-windows-x64-setup.exe`
-- **Windows portable:** `AutoTyperPro-2.1.0-windows-x64-portable.zip` — extract the entire folder before launching.
+### What is new
 
-### Changes
-- Branded drag-to-install Mac disk images, with an Applications shortcut.
-- Per-user Windows installer with Start Menu shortcut, optional desktop shortcut and uninstaller.
-- Original keystroke/motion icon, plus a short, skippable first-run introduction.
-- Mouse Jiggler works on both macOS and Windows; idle threshold, movement interval, optional F18 and global ESC.
-- Live permission refresh and a restart action that preserves the current text/settings. No automatic reopening of System Settings.
-- Native macOS Unicode typing, including Turkish characters and emoji; six speed modes and three newline behaviors.
+- English default interface, optional Turkish, persistent dark/light/system appearance and notification preferences.
+- Recommended Gentle, Balanced and Keyboard-only presets; adjustable activity distance, direction, duration and keyboard shortcuts.
+- Saved typing and activity profiles with rename, duplication and validated JSON import/export.
+- Independent mouse movement, click, physical-key and scroll capture; local macro library and path preview.
+- Playback speed, start delay, repeat count, pause between repeats and explicit display remapping.
+- Persistent Stop / Escape controls, mutually exclusive typing/recording/playback and Anti-AFK yielding.
+- Native macOS event monitoring avoids background keyboard-layout queries that crash on macOS 27.
+- Explicit permission requests from the running app; restart preserves editor text and settings.
 
-### Installation and permissions
-**Mac:** Mount the DMG, drag AutoTyperPro to Applications, eject the image, and open the installed copy. Enable it under System Settings → Privacy & Security → Accessibility (Device Control and Data Access on newer macOS). If permission is already enabled but not recognized, use **Yeniden başlat**. If an older unsigned build is still registered, remove that entry and add the current installed copy.
+### Installation
 
-**Windows:** Run the installer or extract the portable ZIP. It installs for the current user without requiring administrator privileges. Typing into elevated/admin applications may require matching privileges.
+Mac: choose arm64 for Apple Silicon or x64 for Intel, open the DMG, drag the app into Applications, eject the image and open the installed copy. Enable the current app under Privacy & Security → Accessibility / Device Control and Data Access. Earlier ad-hoc permission records may not cover a replacement build.
 
-These packages are not Developer ID notarized or Windows Authenticode signed. Gatekeeper/SmartScreen may ask for user approval. No security settings are changed by the installer. The application never starts typing or jiggling automatically. Text stays on your device; no account or telemetry.
+Windows: use the per-user Setup installer or extract the complete portable ZIP. No activity starts automatically. Input into elevated applications may require matching privileges.
 
-SHA-256 checksum files are included for download verification. The Apple Silicon package was built on macOS 15; the Intel package was built and verified as x86_64 under Rosetta. Windows packages target x64 Windows 10/11. Build provenance and verification are recorded in `BUILD-VERIFICATION.json`. Other architectures are not included.
+Keyboard recording can contain sensitive input. Capture categories are individually selectable and movement-only recording is selected initially. Macros and profiles stay local. Physical-key recordings can only be replayed on their recording OS and depend on keyboard layout; preview display mapping before playback.
+
+Packages are not Developer ID notarized or Authenticode signed. Checksums and actual platform build verification accompany published assets. The 3.0 release is published only after fresh packages and required platform checks succeed.

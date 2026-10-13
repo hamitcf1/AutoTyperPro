@@ -56,7 +56,7 @@ class ActivityPage:
         for index,name in enumerate(MODIFIERS):
             var=ctk.BooleanVar(value=False);self.modifiers[name]=var
             text={'shift':'Shift','control':'Control','alt':'Alt / Option','command':'Command / Win'}[name]
-            widget=ctk.CTkCheckBox(group,text=text,variable=var,command=self.changed,width=130,font=(style.FONT,11));widget.grid(row=index//2,column=index%2,sticky='w',pady=5);self.controls.append(widget)
+            widget=ctk.CTkCheckBox(group,text=text,variable=var,command=self.changed,width=130,font=(style.FONT,11),fg_color=style.ACCENT,hover_color=style.HOVER,checkmark_color=style.BG,text_color=style.INK);widget.grid(row=index//2,column=index%2,sticky='w',pady=5);self.controls.append(widget)
         app.label(settings,tr('activity.key_note'),11,style.MUTED,wraplength=290,justify='left').grid(row=row,column=0,padx=16,pady=(0,18))
         controls=ctk.CTkFrame(page,fg_color=style.PANEL,corner_radius=14);controls.grid(row=3,column=0,columnspan=2,sticky='ew',pady=(14,0));controls.grid_columnconfigure(0,weight=1)
         app.label(controls,tr('ui.f2944a83ef76'),15,weight='bold').grid(row=0,column=0,sticky='w',padx=20,pady=20)

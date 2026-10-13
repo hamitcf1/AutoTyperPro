@@ -22,6 +22,13 @@ class WindowsTests(unittest.TestCase):
         b.send_input=send;b.newline();b.press(0x1B)
         self.assertEqual([scan for vk,scan,flags in record],[0x2A,0x1C,0x1C,0x2A,1,1])
         self.assertEqual([flags for vk,scan,flags in record],[0,0,2,2,0,2])
+    def test_extended_physical_keys_include_extended_flag(self):
+        backend=FakeWindows();received=[]
+        def send(count,events,size):
+            received.extend(events[i].payload.keyboard.flags for i in range(count));return count
+        backend.send_input=send
+        backend.physical_key_event(0x27,True);backend.physical_key_event(0x27,False)
+        self.assertEqual(received,[1,3])
     def test_keyboard_injection_rejection_is_reported(self):
         b=FakeWindows();b.send_input=lambda *args:0
         with self.assertRaises(RuntimeError):b.write('İ')

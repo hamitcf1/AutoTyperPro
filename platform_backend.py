@@ -452,7 +452,8 @@ class WindowsBackend(KeyChordMixin, DesktopBackend):
         with self.lock:
             if not hasattr(self,'_held_keys'):self._held_keys=set()
             if down:self._held_keys.add(code)
-            self.keyboard_events([KeyboardInput(code,0,0 if down else 2,0,0)])
+            extended=1 if code in (0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x2D,0x2E,0x5B,0x5C,0x6F,0x90,0xA3,0xA5) else 0
+            self.keyboard_events([KeyboardInput(code,0,extended | (0 if down else 2),0,0)])
             if not down:self._held_keys.discard(code)
 
     def listen_events(self,callback,capture):

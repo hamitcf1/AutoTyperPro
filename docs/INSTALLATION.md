@@ -18,7 +18,7 @@ If permission appears enabled but the app still reports denial:
 
 Ad-hoc signed builds have different code identities after rebuilding. An earlier grant may not apply to the replacement. The application always checks the operating system's actual result; an enabled switch for another copy is insufficient.
 
-The main branch explicitly requests permission from the running process when you click Settings and replaces the macOS ESC listener to avoid a background keyboard-layout crash on macOS 27. These changes are not in the 2.1.0 release assets. Use the source version if you encounter that crash while a replacement release is being prepared.
+The 3.0 source version explicitly requests permission from the running process when you click Settings and replaces the macOS ESC listener to avoid a background keyboard-layout crash on macOS 27. These changes are not in the 2.1.0 release assets. Source version 3.0 also adds English/Turkish language settings, Anti-AFK profiles and macros. Use the source version if you encounter that crash while a replacement release is being prepared.
 
 ## Windows
 

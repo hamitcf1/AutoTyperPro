@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/icon.png" width="88" alt="AutoTyper Pro icon"></p>
 <h1 align="center">AutoTyper Pro</h1>
-<p align="center"><strong>Less repetition. Your pace. Your control.</strong><br>Automatic typing and Mouse Jiggler / Anti-AFK for macOS and Windows.</p>
+<p align="center"><strong>Less repetition. Your pace. Your control.</strong><br>Automatic typing, Mouse Jiggler / Anti-AFK and local macros for macOS and Windows.</p>
 <p align="center"><a href="https://github.com/hamitcf1/AutoTyperPro/releases/latest">Download</a> · <a href="docs/INSTALLATION.md">Installation & permissions</a> · <a href="CONTRIBUTING.md">Contribute</a> · <a href="README_TR.md">Türkçe</a></p>
 
 ![AutoTyper Pro overview](docs/assets/overview.svg)
@@ -19,22 +19,42 @@ No account. No telemetry. No automatic activity on launch.
 
 [All releases, SHA-256 checksums and build verification](https://github.com/hamitcf1/AutoTyperPro/releases/latest)
 
-**Release status:** the downloadable version is **2.1.0**, whose application interface is Turkish. The repository documentation is English-first. The main branch additionally fixes explicit macOS permission requests and a macOS 27 ESC-listener crash; these fixes are not included in the 2.1.0 downloads yet. English/Turkish language selection, custom activity profiles and macro recording are [proposed for the next major version](docs/global-product-design.md).
+**Release status:** source version **3.0.0** includes an English-first interface, Turkish language selection, saved profiles and macro recording. Published installers are still **2.1.0** with a Turkish interface; they do not include the latest permission/ESC fixes. A fresh Windows build is required before the 3.0 installer release can be published. On macOS 27, use the current source version if 2.1 crashes when starting input monitoring.
 
 Packages are not Developer ID notarized or Windows Authenticode signed. See the [installation guide](docs/INSTALLATION.md) before opening them.
 
-## What you can do today
+## In the 3.0 source version
 
 | Auto Typer | Mouse Jiggler / Anti-AFK |
 | --- | --- |
 | Six speed modes, including a custom random range | Independent start and stop controls |
-| Start delay from 0 to 60 seconds | Adjustable idle threshold and activity interval |
-| Natural timing variation and word pauses | Small cursor movement with return to the original position |
-| Newlines as spaces, Shift+Enter or skipped | Optional F18 key activity, off by default |
+| Start delay from 0 to 60 seconds | Recommended presets plus adjustable idle threshold and interval |
+| Natural timing variation and word pauses | Adjustable distance, horizontal/vertical return or a small square |
+| Newlines as spaces, Shift+Enter or skipped | F13–F20 or a custom physical key/shortcut; keyboard activity off by default |
 | Unicode typing, live progress and time estimate | Automatically waits while Auto Typer runs |
 | Optional sound notifications | Avoids restoring the cursor over a user's mouse movement |
 
+Save, rename, duplicate and import/export typing and Anti-AFK profiles as JSON. Restore the clearly marked recommended defaults whenever you want.
+
+**Macros:** record mouse movement, clicks, physical keys and scrolling independently. Preview the path, save named recordings, then replay at 0.25–4× speed with a start delay, repeat count and pause between repeats. Movement-only capture is selected initially. Recordings stay local and are limited to five minutes / 10,000 events. Keyboard recordings are platform-specific and depend on the current keyboard layout.
+
+**Settings:** English or Turkish, dark/light/system appearance and sound preferences. Language changes preserve your editor text and configuration.
+
 Mouse Jiggler does not click. It does not guarantee that a particular service will show you as online or that the operating system will stay awake.
+
+## A look inside
+
+Real screenshots of the English 3.0 source interface:
+
+![Auto Typer interface](docs/assets/auto-typer.jpg)
+
+<details><summary>Mouse Jiggler / Anti-AFK and macros</summary>
+
+![Anti-AFK profiles and activity controls](docs/assets/anti-afk.jpg)
+
+![Macro library and capture controls](docs/assets/macros.jpg)
+
+</details>
 
 ## Quick start
 

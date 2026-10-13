@@ -15,8 +15,8 @@ python tools/ui_smoke.py
 
 The UI smoke test uses a simulated backend. Native integration tests send real events to their own controlled test window and require an interactive desktop. Run them only deliberately:
 
-- macOS: `python tools/native_smoke.py`
-- Windows: `python tools/windows_native_smoke.py`
+- macOS: install optional test dependency `pyobjc-framework-Cocoa`, then run `python tools/native_smoke.py` and `python tools/native_macro_smoke.py`
+- Windows: `python tools/windows_native_smoke.py` and `python tools/windows_macro_smoke.py`
 
 Do not change focus during native tests. Native input permission must be granted by the user. Test cancellations, ESC, denied permission and teardown when changing input code. Keep all Tk mutations on the UI thread; workers communicate through queues and synchronization primitives.
 
@@ -25,7 +25,7 @@ Do not change focus during native tests. Native input permission must be granted
 - macOS app: `./make_executable_mac.sh`
 - macOS DMG: install `ds-store` and `mac-alias`, then run `python packaging/macos/build_dmg.py` after the app build.
 - Windows app: `make_executable.bat`
-- Windows Setup: Inno Setup 6 with `packaging/windows/installer.iss` after the app build.
+- Windows Setup: Inno Setup 6 with `packaging/windows/installer.iss` after the app build; pass `/DAppVersion=<VERSION>` using the value from `preferences.py`.
 
 The release workflow builds macOS arm64, macOS x64 and Windows x64, validates packaged launch and checks Windows install/uninstall before publication. Do not label an existing binary with a new version after changing runtime code. Generated artifacts, virtual environments and local preferences must remain outside Git.
 
@@ -33,10 +33,11 @@ The release workflow builds macOS arm64, macOS x64 and Windows x64, validates pa
 
 | Path | Purpose |
 | --- | --- |
-| `auto_typer.py`, `onboarding.py` | Desktop UI and introduction |
+| `auto_typer.py`, `activity_page.py`, `macro_page.py`, `onboarding.py` | Desktop UI and introduction |
 | `engine.py` | Validated configurations and cancellable workers |
 | `platform_backend.py` | Native macOS/Windows input and permissions |
-| `preferences.py` | Local preferences and application version |
+| `preferences.py`, `profiles.py`, `localization.py`, `locales/` | Local settings, saved profiles, translations and version |
+| `macros.py`, `macro_recorder.py`, `event_capture.py` | Validated recording, playback and platform capture |
 | `tests/`, `tools/` | Regression checks, native checks and asset tooling |
 | `assets/`, `sounds/` | Bundled application resources |
 | `packaging/`, `.github/workflows/` | Installers and release automation |
