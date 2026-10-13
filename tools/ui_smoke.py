@@ -26,6 +26,11 @@ def pump(seconds=.3):
     deadline=time.monotonic()+seconds
     while time.monotonic()<deadline:
         app.root.update(); time.sleep(.01)
+def pump_until(predicate,timeout=8):
+    deadline=time.monotonic()+timeout
+    while not predicate() and time.monotonic()<deadline:
+        app.root.update();time.sleep(.01)
+    assert predicate(),'UI activity did not settle before timeout'
 
 app.root.geometry('980x740'); pump()
 app.nav.set('Mouse Jiggler'); app.show_page('Mouse Jiggler'); pump()
@@ -36,14 +41,15 @@ app.start_typing(); assert not app.typing_active.is_set()
 app.text_input.insert('1.0','İstanbul şğüöç'); pump()
 app.start_delay.delete(0,'end'); app.start_delay.insert(0,'0')
 app.speed.set('Çok hızlı'); app.settings_changed()
-app.start_typing(); pump(1)
+app.start_typing(); pump_until(lambda:not app.typing_active.is_set())
 assert ''.join(app.backend.output)=='İstanbul şğüöç',app.backend.output
 assert not app.typing_active.is_set()
 assert app.progress.get()==1
 app.start_delay.delete(0,'end'); app.start_delay.insert(0,'nan')
 app.start_typing(); assert not app.typing_active.is_set()
 app.start_delay.delete(0,'end'); app.start_delay.insert(0,'60')
-app.start_typing(); pump(.2); app.emergency_stop(); pump(.3)
+app.start_typing(); pump(.2); app.emergency_stop()
+pump_until(lambda:not app.typing_active.is_set() and not app.jiggler_thread.is_alive())
 assert not app.typing_active.is_set()
 assert not app.jiggler_thread.is_alive()
 app.speed.set('Rastgele'); app.settings_changed(); pump()

@@ -28,14 +28,17 @@ with tempfile.TemporaryDirectory(prefix='autotyper-dmg-') as temp:
     try:
         (mount/'Applications').symlink_to('/Applications')
         background=mount/'.background';background.mkdir()
-        Image.open(root/'assets/dmg-background.png').resize((640,420),Image.Resampling.LANCZOS).save(background/'background.png')
+        retina=Image.open(root/'assets/dmg-background.png')
+        retina.resize((640,420),Image.Resampling.LANCZOS).save(background/'background.png',dpi=(72,72))
+        retina.save(background/'background@2x.png',dpi=(144,144))
+        run('tiffutil','-cathidpicheck',str(background/'background.png'),str(background/'background@2x.png'),'-out',str(background/'background.tiff'))
         shutil.copy2(root/'assets/icon.icns',mount/'.VolumeIcon.icns')
         info=bytearray(32);info[8]=4
         run('xattr','-wx','com.apple.FinderInfo',bytes(info).hex(),str(mount))
         with DSStore.open(str(mount/'.DS_Store'),'w+') as ds:
             ds['.']['vSrn']=('long',1)
             ds['.']['bwsp']={'WindowBounds':'{{200, 150}, {640, 420}}','ShowToolbar':False,'ShowSidebar':False,'ContainerShowSidebar':False,'PreviewPaneVisibility':False,'SidebarWidth':0,'ShowStatusBar':False,'ShowPathbar':False,'ShowTabView':False}
-            ds['.']['icvp']={'viewOptionsVersion':1,'backgroundType':2,'backgroundImageAlias':Alias.for_file(str(background/'background.png')).to_bytes(),'backgroundColorRed':.08,'backgroundColorGreen':.09,'backgroundColorBlue':.08,'iconSize':104.0,'textSize':13.0,'labelOnBottom':True,'gridSpacing':100.0,'gridOffsetX':0.0,'gridOffsetY':0.0,'arrangeBy':'none','showIconPreview':True,'showItemInfo':False,'scrollPositionX':0.0,'scrollPositionY':0.0}
+            ds['.']['icvp']={'viewOptionsVersion':1,'backgroundType':2,'backgroundImageAlias':Alias.for_file(str(background/'background.tiff')).to_bytes(),'backgroundColorRed':.08,'backgroundColorGreen':.09,'backgroundColorBlue':.08,'iconSize':104.0,'textSize':13.0,'labelOnBottom':True,'gridSpacing':100.0,'gridOffsetX':0.0,'gridOffsetY':0.0,'arrangeBy':'none','showIconPreview':True,'showItemInfo':False,'scrollPositionX':0.0,'scrollPositionY':0.0}
             ds['.']['icvl']=('type','icnv')
             ds[app.name]['Iloc']=(175,170)
             ds['Applications']['Iloc']=(465,170)
