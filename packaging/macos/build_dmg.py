@@ -6,6 +6,7 @@ import plistlib
 import shutil
 import subprocess
 import tempfile
+import time
 from ds_store import DSStore
 from mac_alias import Alias
 from PIL import Image
@@ -20,7 +21,19 @@ mount=None
 with tempfile.TemporaryDirectory(prefix='autotyper-dmg-') as temp:
     temp=Path(temp);writable=temp/'install.dmg'
     def run(*args):return subprocess.check_output(args)
+    def detach_owned_image(point):
+        # Finder/Spotlight can briefly retain handles after icon generation.
+        # Only this script's freshly created temporary volume is eligible.
+        run('sync')
+        for attempt in range(6):
+            result=subprocess.run(['hdiutil','detach',str(point)],capture_output=True,text=True)
+            if result.returncode==0:return
+            if result.returncode!=16 and 'Resource busy' not in result.stderr:
+                raise RuntimeError(result.stderr.strip())
+            time.sleep(.5+attempt*.2)
+        run('hdiutil','detach','-force',str(point))
     staging=temp/'source';staging.mkdir()
+    (staging/'.metadata_never_index').touch()
     run('ditto',str(app),str(staging/app.name))
     run('hdiutil','create','-srcfolder',str(staging),'-size','256m','-fs','HFS+','-volname','AutoTyper Pro','-format','UDRW','-o',str(writable))
     attached=plistlib.loads(run('hdiutil','attach','-nobrowse','-plist',str(writable)))
@@ -28,6 +41,7 @@ with tempfile.TemporaryDirectory(prefix='autotyper-dmg-') as temp:
     try:
         (mount/'Applications').symlink_to('/Applications')
         background=mount/'.background';background.mkdir()
+        (mount/'.metadata_never_index').touch()
         retina=Image.open(root/'assets/dmg-background.png')
         retina.resize((640,420),Image.Resampling.LANCZOS).save(background/'background.png',dpi=(72,72))
         retina.save(background/'background@2x.png',dpi=(144,144))
@@ -42,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix='autotyper-dmg-') as temp:
             ds['.']['icvl']=('type','icnv')
             ds[app.name]['Iloc']=(175,170)
             ds['Applications']['Iloc']=(465,170)
-    finally:run('hdiutil','detach',str(mount));mount=None
+    finally:detach_owned_image(mount);mount=None
     run('hdiutil','convert',str(writable),'-format','UDZO','-imagekey','zlib-level=9','-ov','-o',str(target))
     run('hdiutil','verify',str(target))
 print(target)
