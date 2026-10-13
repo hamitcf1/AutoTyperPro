@@ -127,18 +127,25 @@ def play_macro(macro,backend,stop,events,speed=1.0,repeats=1,repeat_delay=0.0,st
         except Exception as exc:events.put(('macro_error',str(exc)))
 
 
+def valid_identity(value):
+    if not isinstance(value,str):raise ValueError(tr('macro.invalid'))
+    try:return str(uuid.UUID(value))
+    except (ValueError,AttributeError) as exc:raise ValueError(tr('macro.invalid')) from exc
+
+
 class MacroStore:
     def __init__(self,directory=None):self.directory=Path(directory) if directory else config_directory()/'macros'
     def save(self,name,macro,identity=None):
         macro=validate_macro(macro)
         if not isinstance(name,str) or not 1<=len(name.strip())<=80:raise ValueError(tr('macro.invalid_name'))
-        identity=identity or str(uuid.uuid4());identity=str(uuid.UUID(identity))
+        identity=str(uuid.uuid4()) if identity is None else valid_identity(identity)
         atomic_json(self.directory/(identity+'.json'),{'schema':1,'id':identity,'name':name.strip(),'macro':macro.document()})
         return identity
     def list(self):
-        result=[]
+        result=[];self.errors=[]
         for path in sorted(self.directory.glob('*.json')):
-            item=self.read_file(path);result.append(item)
+            try:result.append(self.read_file(path))
+            except ValueError:self.errors.append(path.name)
         return result
     @staticmethod
     def read_file(path):
@@ -147,14 +154,14 @@ class MacroStore:
             if path.stat().st_size>4*1024*1024:raise ValueError(tr('macro.invalid'))
             data=json.loads(path.read_text(encoding='utf-8'))
             if not isinstance(data,dict) or data.get('schema')!=1:raise ValueError(tr('macro.invalid'))
-            identity=str(uuid.UUID(data['id']));name=data['name']
+            identity=valid_identity(data['id']);name=data['name']
             if not isinstance(name,str) or not 1<=len(name.strip())<=80:raise ValueError(tr('macro.invalid_name'))
             return {'id':identity,'name':name.strip(),'macro':validate_macro(data['macro'])}
-        except (OSError,ValueError,TypeError,KeyError) as exc:raise ValueError(tr('macro.invalid')) from exc
+        except (OSError,ValueError,TypeError,KeyError,RecursionError) as exc:raise ValueError(tr('macro.invalid')) from exc
     def import_file(self,path):
         data=self.read_file(path);self.save(data['name'],data['macro'],data['id']);return data
     def export_file(self,identity,path):
-        identity=str(uuid.UUID(identity));data=self.read_file(self.directory/(identity+'.json'))
+        identity=valid_identity(identity);data=self.read_file(self.directory/(identity+'.json'))
         atomic_json(path,{'schema':1,'id':identity,'name':data['name'],'macro':data['macro'].document()})
     def delete(self,identity):
-        identity=str(uuid.UUID(identity));(self.directory/(identity+'.json')).unlink(missing_ok=True)
+        identity=valid_identity(identity);(self.directory/(identity+'.json')).unlink(missing_ok=True)

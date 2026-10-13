@@ -226,5 +226,7 @@
   "macro.listener_stop": "Input recorder did not stop; close the app before starting again.",
   "macro.badge_recording": "● Recording",
   "macro.badge_playing": "● Macro active",
-  "macro.no_events": "No events were captured. Record a movement before stopping."
+  "macro.no_events": "No events were captured. Record a movement before stopping.",
+  "typing.invalid_types": "Typing settings must use valid integer delays and boolean rhythm options.",
+  "macro.library_errors": "{count} saved macro files could not be read. They were preserved; valid recordings remain available."
 }

@@ -1,13 +1,13 @@
 from localization import tr
 """Validated, UI-independent activity workers. No Tk calls belong here."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 import random
 import time
 from keycodes import SUPPORTED_KEYS, MODIFIERS
 
 def bounded(value, low, high, name):
-    if not math.isfinite(value) or not low <= value <= high:
+    if type(value) not in (int,float) or not math.isfinite(value) or not low <= value <= high:
         raise ValueError(tr('ui.cd3ae9b9c721', v0=name, v1=low, v2=high))
 
 @dataclass(frozen=True)
@@ -21,8 +21,10 @@ class TypingConfig:
     newline: str = 'space'
 
     def validate(self):
+        if type(self.natural) is not bool or type(self.word_pauses) is not bool or any(type(value) is not int for value in (self.delay_ms,self.min_ms,self.max_ms)):
+            raise ValueError(tr('typing.invalid_types'))
         bounded(self.start_delay, 0, 60, tr('ui.956093d278da'))
-        if self.delay_ms not in (-1, 30, 60, 100, 150, 250, 1):
+        if self.delay_ms not in (-1, 30, 60, 100, 150, 250):
             raise ValueError(tr('ui.a4c13fb8286a'))
         bounded(self.min_ms, 10, 5000, tr('ui.4a278980a5ab'))
         bounded(self.max_ms, self.min_ms, 5000, tr('ui.0d4c03cfb2b7'))
@@ -66,7 +68,7 @@ class JigglerConfig:
             raise ValueError(tr('activity.invalid_key'))
         if (self.modifiers and self.key is None) or (self.movement == 'off' and self.key is None):
             raise ValueError(tr('activity.empty'))
-        return self
+        return replace(self,modifiers=tuple(self.modifiers))
 
 
 class JigglerSchedule:

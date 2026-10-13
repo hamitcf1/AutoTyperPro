@@ -55,6 +55,7 @@ class MacroPage:
                 button=self.app.button(self.library,item['name'],lambda item=item:self.select(item),height=34)
                 button.pack(fill='x',padx=4,pady=4)
                 if self.app.macro_active.is_set():button.configure(state='disabled')
+            if self.store.errors:self.app.tell(tr('macro.library_errors',count=len(self.store.errors)),True)
         except ValueError as exc:self.app.tell(str(exc),True)
     def select(self,item):
         if self.app.macro_active.is_set():return
@@ -171,4 +172,8 @@ class MacroPage:
         for key,value in data['entries'].items():self.entries[key].delete(0,'end');self.entries[key].insert(0,value)
         for key,value in data['capture'].items():self.capture[key].set(value)
         self.speed.set(data['speed']);self.fit.set(data['fit']);self.selected=data.get('selected')
-        if data.get('draft'):self.draft=validate_macro(data['draft']);self.describe();self.play_button.configure(state='normal')
+        if data.get('draft'):
+            self.draft=validate_macro(data['draft']);self.describe();self.play_button.configure(state='normal')
+            if self.selected:
+                saved=next((item for item in self.store.list() if item['id']==self.selected),None)
+                if saved:self.title.configure(text=saved['name'])

@@ -34,6 +34,8 @@ class FakeBackend:
 config_directory=tempfile.TemporaryDirectory()
 os.environ['AUTOTYPER_CONFIG_DIR']=config_directory.name
 Path(config_directory.name,'profiles.json').write_text('{broken')
+macro_directory=Path(config_directory.name,'macros');macro_directory.mkdir()
+(macro_directory/'invalid.json').write_text('{"schema":1,"id":[],"name":"broken"}')
 app=AutoTyper(show_intro=False); app.backend.close(); app.backend=FakeBackend()
 errors=[]
 app.root.report_callback_exception=lambda *args: errors.append(args)

@@ -338,7 +338,7 @@ class AutoTyper:
         self.intro = Introduction(self)
 
     def snapshot(self):
-        return { 'text': self.text_input.get('1.0', 'end-1c'), 'speed': self.speed.get(), 'newline': self.newline.get(), 'natural': self.natural.get(), 'word_pauses': self.word_pauses.get(), 'sound': self.sound.get(), 'start_delay': self.start_delay.get(), 'min_delay': self.min_delay.get(), 'max_delay': self.max_delay.get(), 'idle': self.idle_entry.get(), 'interval': self.interval_entry.get(), 'activity':self.activity_page.snapshot(), 'macro':self.macro_page.snapshot()}
+        return { 'text': self.text_input.get('1.0', 'end-1c'), 'speed': self.speed.get(), 'newline': self.newline.get(), 'natural': self.natural.get(), 'word_pauses': self.word_pauses.get(), 'sound': self.sound.get(), 'start_delay': self.start_delay.get(), 'min_delay': self.min_delay.get(), 'max_delay': self.max_delay.get(), 'idle': self.idle_entry.get(), 'interval': self.interval_entry.get(), 'activity':self.activity_page.snapshot(), 'macro':self.macro_page.snapshot(), 'profiles':{'typing':self.typing_profiles.selected,'activity':self.activity_page.profiles.selected}}
 
     def apply_state(self, data):
         self.text_input.delete('1.0','end')
@@ -352,6 +352,9 @@ class AutoTyper:
         if 'activity' in data:self.activity_page.restore(data['activity'])
         elif 'f18' in data:self.activity_page.apply({'idle_threshold':float(data.get('idle',60)),'interval':float(data.get('interval',30)),'key':'f18' if data['f18'] else None})
         self.settings_changed()
+        if 'profiles' in data:
+            for kind,bar in [('typing',self.typing_profiles),('activity',self.activity_page.profiles)]:
+                bar.selected=data['profiles'].get(kind);bar.refresh();bar.dirty()
         self.newline_menu.set(tr(NEWLINE_KEYS[list(NEWLINES).index(self.newline.get())]) if self.newline.get() != 'shift_enter' else 'Shift + Enter')
 
     def newline_changed(self, value):

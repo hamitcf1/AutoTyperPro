@@ -226,5 +226,7 @@
   "macro.listener_stop": "Girdi kaydı durmadı; yeniden başlamadan önce uygulamayı kapat.",
   "macro.badge_recording": "● Kaydediliyor",
   "macro.badge_playing": "● Makro etkin",
-  "macro.no_events": "Etkinlik kaydedilmedi. Durdurmadan önce bir hareket kaydedin."
+  "macro.no_events": "Etkinlik kaydedilmedi. Durdurmadan önce bir hareket kaydedin.",
+  "typing.invalid_types": "Yazma ayarlarında tam sayı bekleme süreleri ve geçerli ritim seçenekleri kullanın.",
+  "macro.library_errors": "{count} kayıt dosyası okunamadı. Dosyalar korundu; geçerli kayıtlar kullanılabilir."
 }

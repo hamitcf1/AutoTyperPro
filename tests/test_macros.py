@@ -46,6 +46,22 @@ class MacroTests(unittest.TestCase):
         for events in ([event(0,'move',x=50,y=50)], [event(0,'key',code=0,down=True),event(.1,'key',code=0,down=False)]):
             queue_=queue.Queue();play_macro(validate_macro(data(events)),Backend(),threading.Event(),queue_,start_delay=0)
             self.assertEqual(queue_.get()[0],'macro_error')
+    def test_invalid_uuid_types_rejected_without_store_mutation(self):
+        from macros import MacroStore, validate_macro
+        from pathlib import Path
+        import json, tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            store=MacroStore(Path(directory)/'macros')
+            identity=store.save('Original',validate_macro(data([event(0,'move',x=1,y=1)])))
+            before=(store.directory/(identity+'.json')).read_bytes()
+            source=Path(directory)/'invalid.json'
+            for bad in ([],{},None,True,3):
+                source.write_text(json.dumps({'schema':1,'id':bad,'name':'Invalid','macro':data([event(0,'move',x=1,y=1)])}))
+                with self.assertRaises(ValueError):store.import_file(source)
+                self.assertEqual((store.directory/(identity+'.json')).read_bytes(),before)
+            (store.directory/'corrupted.json').write_text(source.read_text())
+            self.assertEqual([item['id'] for item in store.list()],[identity])
+            self.assertTrue((store.directory/'corrupted.json').exists())
     def test_explicit_remapping_and_repeats(self):
         from macros import validate_macro,play_macro
         class Backend:

@@ -216,7 +216,11 @@ class MacBackend(KeyChordMixin):
 
     def move_to(self, point):
         self.require_permission()
-        self.send(self.mouse(None,5,Point(*xy(point)),0))
+        held=getattr(self,'_held_buttons',set())
+        button=next((button for button in ('left','right','middle','x1','x2') if button in held),None)
+        kind=5 if button is None else 6 if button=='left' else 7 if button=='right' else 27
+        index={'left':0,'right':1,'middle':2,'x1':3,'x2':4}.get(button,0)
+        self.send(self.mouse(None,kind,Point(*xy(point)),index))
 
     def physical_key_event(self,code,down):
         self.require_permission()
@@ -253,9 +257,9 @@ class MacBackend(KeyChordMixin):
         codes={'left':(1,2,0),'right':(3,4,1),'middle':(25,26,2),'x1':(25,26,3),'x2':(25,26,4)}
         with self.lock:
             if not hasattr(self,'_held_buttons'):self._held_buttons=set()
-            if down:self._held_buttons.add(button)
             if point is not None:self.move_to(point)
-            position=Point(*xy(self.position()))
+            if down:self._held_buttons.add(button)
+            position=Point(*xy(point if point is not None else self.position()))
             before,after,index=codes[button]
             self.send(self.mouse(None,before if down else after,position,index))
             if not down:self._held_buttons.discard(button)

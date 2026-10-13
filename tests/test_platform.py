@@ -32,6 +32,16 @@ class PlatformTests(unittest.TestCase):
         self.assertFalse(backend.allowed())
     def test_granted_permission_does_not_prompt_again(self):
         self.assertTrue(SimulatedMac().request_permission())
+    def test_drag_events_follow_held_button_state(self):
+        backend=SimulatedMac();backend._held_buttons={'left'}
+        backend.mouse=lambda source,kind,point,button:(kind,point.x,point.y,button)
+        backend.move_to((20,30))
+        self.assertEqual(backend.sent,[(6,20,30,0)])
+    def test_click_uses_explicit_position_after_asynchronous_move(self):
+        backend=SimulatedMac()
+        backend.mouse=lambda source,kind,point,button:(kind,point.x,point.y,button)
+        backend.button_event('left',True,(40,30))
+        self.assertEqual(backend.sent,[(5,40,30,0),(1,40,30,0)])
     def test_unicode_events_clear_inherited_modifier_flags(self):
         backend=SimulatedMac(); flags=[]
         backend.key=lambda source,code,down: object()

@@ -47,6 +47,24 @@ class ProfileTests(unittest.TestCase):
                 exported.write_text(payload)
                 with self.assertRaises(ValueError): store.import_file(exported)
                 self.assertEqual(store.path.read_bytes(), before)
+    def test_invalid_typing_types_never_overwrite_existing_profile(self):
+        from profiles import ProfileStore, new_profile
+        with tempfile.TemporaryDirectory() as directory:
+            store=ProfileStore(Path(directory)/'profiles.json')
+            profile=new_profile('Original','typing',{})
+            store.save(profile);before=store.path.read_bytes()
+            imported=Path(directory)/'import.json'
+            for config in ({'natural':'not-a-boolean'},{'word_pauses':1},{'min_ms':10.5},{'delay_ms':True},{'delay_ms':1},{'start_delay':False}):
+                profile['config']=config
+                imported.write_text(json.dumps({'schema':1,'profile':profile}))
+                with self.assertRaises(ValueError):store.import_file(imported)
+                self.assertEqual(store.path.read_bytes(),before)
+    def test_activity_modifier_lists_round_trip_as_ui_configuration(self):
+        from profiles import ProfileStore, new_profile
+        with tempfile.TemporaryDirectory() as directory:
+            store=ProfileStore(Path(directory)/'profiles.json')
+            store.save(new_profile('Shortcut','activity',{'key':'f18','modifiers':['control']}))
+            self.assertEqual(store.load()[0]['config'],{'idle_threshold':60,'interval':30,'distance':1,'movement':'horizontal_return','duration_ms':80,'key':'f18','modifiers':('control',)})
     def test_rename_delete_and_invalid_config(self):
         from profiles import ProfileStore, new_profile
         with tempfile.TemporaryDirectory() as directory:

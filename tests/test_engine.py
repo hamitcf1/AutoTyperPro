@@ -15,7 +15,7 @@ class EngineTests(unittest.TestCase):
     def test_unicode_and_newlines(self):
         for mode, expected in [('space', ['İ', ' ', 'ş']), ('ignore', ['İ', 'ş']), ('shift_enter', ['İ', '<shift-enter>', 'ş'])]:
             b = Backend(); q = queue.Queue()
-            type_text('İ\nş', TypingConfig(delay_ms=1, start_delay=0, newline=mode), b, threading.Event(), q)
+            type_text('İ\nş', TypingConfig(delay_ms=30, start_delay=0, newline=mode), b, threading.Event(), q)
             self.assertEqual(b.output, expected)
             events = list(q.queue)
             self.assertEqual(events[-1][0], 'finished')
