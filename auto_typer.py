@@ -1,415 +1,424 @@
-import customtkinter as ctk
-import keyboard
-import pyperclip
+"""AutoTyper Pro desktop application. All UI mutations run on the Tk thread."""
+import queue
+import sys
 import threading
 import time
-import random
-import winsound
-import os
+import tkinter as tk
+import customtkinter as ctk
+from engine import TypingConfig, JigglerConfig, type_text, jiggle
+from platform_backend import create_backend, open_permissions, play_sound
+
+BG = '#141816'
+PANEL = '#1D2420'
+INSET = '#171D19'
+LINE = '#303C34'
+INK = '#F0F3EF'
+MUTED = '#97A79C'
+ACCENT = '#ACD5AE'
+HOVER = '#C2E3C3'
+DANGER = '#EDB6A9'
+FONT = 'SF Pro Display' if sys.platform == 'darwin' else 'Segoe UI'
+SPEEDS = {'Çok hızlı': 30, 'Hızlı': 60, 'Dengeli': 100, 'Yavaş': 150, 'Çok yavaş': 250, 'Rastgele': -1}
+NEWLINES = {'Boşluk': 'space', 'Shift + Enter': 'shift_enter', 'Atla': 'ignore'}
+
+
+def duration(seconds):
+    seconds = max(0, round(seconds))
+    return f'{seconds // 60:02d}:{seconds % 60:02d}'
+
 
 class AutoTyper:
     def __init__(self):
-        self.root = ctk.CTk()
-        self.root.title("Auto Typer Pro")
-        self.root.geometry("800x600")
-        ctk.set_appearance_mode("dark")
-        
-        # Variables
-        self.is_typing = False
-        self.typing_thread = None
-        self.text_to_type = ""
-        self.current_delay = 100  # Default delay in ms
-        
-        # Create the GUI
+        ctk.set_appearance_mode('dark')
+        self.root = ctk.CTk(fg_color=BG)
+        self.root.title('AutoTyper Pro')
+        self.root.geometry('1120x800')
+        self.root.minsize(980, 740)
+        self.root.protocol('WM_DELETE_WINDOW', self.close)
+        self.backend = create_backend()
+        self.typing_events = queue.Queue(); self.jiggler_events = queue.Queue()
+        self.typing_stop = threading.Event(); self.jiggler_stop = threading.Event()
+        self.typing_thread = None; self.jiggler_thread = None
+        self.typing_active = threading.Event()
+        self.total = 0; self.typed = 0; self.active_config = None; self.active_text = ''
+        self.jiggler_started = None; self.listener_started = False; self.closing = False
+        self.page = 'Auto Typer'; self.movement_count = 0
+        self.speed = ctk.StringVar(value='Dengeli')
+        self.newline = ctk.StringVar(value='Boşluk')
+        self.natural = ctk.BooleanVar(value=True)
+        self.word_pauses = ctk.BooleanVar(value=False)
+        self.sound = ctk.BooleanVar(value=True)
+        self.f18 = ctk.BooleanVar(value=False)
         self.setup_gui()
-        
-        # Bind ESC key for emergency stop
-        keyboard.on_press_key("esc", self.emergency_stop)
+        self.root.bind('<Escape>', lambda _: self.emergency_stop())
+        self.root.bind('<Command-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
+        self.root.bind('<Control-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
+        self.root.after(100, self.poll)
+        self.root.after(200, self.check_permissions)
+
+    def label(self, parent, text, size=14, color=INK, weight='normal', **kwargs):
+        return ctk.CTkLabel(parent, text=text, text_color=color, font=(FONT, size, weight), anchor='w', **kwargs)
+
+    def button(self, parent, text, command, primary=False, **kwargs):
+        return ctk.CTkButton(parent, text=text, command=command, height=38, corner_radius=9,
+            font=(FONT, 13, 'bold' if primary else 'normal'), fg_color=ACCENT if primary else LINE,
+            hover_color=HOVER if primary else '#435447', text_color=BG if primary else INK,
+            text_color_disabled='#6C7B70', **kwargs)
+
+    def entry(self, parent, value, width=76):
+        entry = ctk.CTkEntry(parent, width=width, height=36, fg_color=INSET, border_color=LINE,
+                             corner_radius=8, font=(FONT, 14), text_color=INK)
+        entry.insert(0, str(value)); return entry
+
+    def switch(self, parent, text, var, command=None):
+        return ctk.CTkSwitch(parent, text=text, variable=var, command=command,
+            font=(FONT, 13), text_color=INK, progress_color=ACCENT, fg_color=LINE,
+            button_color=INK, button_hover_color=HOVER, switch_width=34, switch_height=18)
 
     def setup_gui(self):
-        # Text input frame
-        text_frame = ctk.CTkFrame(self.root)
-        text_frame.pack(pady=10, padx=10, fill="both", expand=True)
-        
-        # Text input label
-        text_label = ctk.CTkLabel(text_frame, text="Text to Type:")
-        text_label.pack(pady=5)
-        
-        # Text input box
-        self.text_input = ctk.CTkTextbox(text_frame, height=200)
-        self.text_input.pack(pady=5, padx=10, fill="both", expand=True)
-        
-        # Bind text changes to update stats
-        self.text_input.bind("<<Modified>>", self._on_text_modified)
-        
-        # Button frame
-        button_frame = ctk.CTkFrame(self.root)
-        button_frame.pack(pady=10, padx=10, fill="x")
-        
-        # Copy, Paste, Clear buttons
-        copy_btn = ctk.CTkButton(button_frame, text="Copy", command=self.copy_text)
-        copy_btn.pack(side="left", padx=5)
-        
-        paste_btn = ctk.CTkButton(button_frame, text="Paste", command=self.paste_text)
-        paste_btn.pack(side="left", padx=5)
-        
-        clear_btn = ctk.CTkButton(button_frame, text="Clear", command=self.clear_text)
-        clear_btn.pack(side="left", padx=5)
-        
-        # Speed selection frame
-        speed_frame = ctk.CTkFrame(self.root)
-        speed_frame.pack(pady=10, padx=10, fill="x")
-        
-        # Speed mode buttons
-        self.speed_var = ctk.StringVar(value="normal")
-        speeds = [
-            ("Super Fast", 30),
-            ("Fast", 60),
-            ("Normal", 100),
-            ("Slow", 150),
-            ("Super Slow", 250),
-            ("Kaotic Random", -1)  # -1 indicates random mode
-        ]
-        
-        for speed_name, delay in speeds:
-            btn = ctk.CTkRadioButton(
-                speed_frame,
-                text=speed_name,
-                value=str(delay),
-                variable=self.speed_var
-            )
-            btn.pack(side="left", padx=10)
-        
-        # Options Frame
-        options_frame = ctk.CTkFrame(self.root)
-        options_frame.pack(pady=10, padx=10, fill="x")
+        self.root.grid_columnconfigure(0, weight=1); self.root.grid_rowconfigure(2, weight=1)
+        header = ctk.CTkFrame(self.root, fg_color='transparent', height=76)
+        header.grid(row=0, column=0, sticky='ew', padx=30, pady=(20, 8))
+        header.grid_columnconfigure(1, weight=1)
+        mark = ctk.CTkFrame(header, width=42, height=42, corner_radius=12, fg_color=ACCENT)
+        mark.grid(row=0, column=0, rowspan=2, padx=(0,12)); mark.grid_propagate(False)
+        ctk.CTkLabel(mark, text='a↗', font=(FONT, 25, 'bold'), text_color=BG).place(relx=.5, rely=.5, anchor='center')
+        self.label(header, 'AutoTyper', 20, weight='bold').grid(row=0, column=1, sticky='sw')
+        self.label(header, 'PRO  /  DESKTOP TOOLS', 10, MUTED).grid(row=1, column=1, sticky='nw')
+        self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', 'Mouse Jiggler'], command=self.show_page,
+            height=38, corner_radius=10, font=(FONT, 13), fg_color=PANEL, selected_color=LINE,
+            selected_hover_color='#435447', unselected_color=PANEL, unselected_hover_color=LINE,
+            text_color=INK, dynamic_resizing=False, width=290)
+        self.nav.set('Auto Typer'); self.nav.grid(row=0, column=2, rowspan=2, padx=24)
+        self.activity_badge = self.label(header, '●  Hazır', 12, ACCENT)
+        self.activity_badge.grid(row=0, column=3, rowspan=2)
+        self.permission_bar = ctk.CTkFrame(self.root, fg_color='#332B23', corner_radius=10)
+        self.permission_bar.grid(row=1, column=0, sticky='ew', padx=30, pady=(0,10))
+        self.permission_bar.grid_columnconfigure(0, weight=1)
+        self.permission_text = self.label(self.permission_bar, 'Klavye ve fare kontrolü için erişilebilirlik izni gerekiyor.', 12, '#E4CEAC')
+        self.permission_text.grid(row=0, column=0, sticky='w', padx=14, pady=12)
+        self.button(self.permission_bar, 'İzin ayarlarını aç ↗', open_permissions, width=158).grid(row=0, column=1, padx=10)
+        self.permission_bar.grid_remove()
+        self.body = ctk.CTkFrame(self.root, fg_color='transparent')
+        self.body.grid(row=2, column=0, sticky='nsew', padx=30)
+        self.body.grid_columnconfigure(0, weight=1); self.body.grid_rowconfigure(0, weight=1)
+        self.typer_page = ctk.CTkFrame(self.body, fg_color='transparent')
+        self.jiggler_page = ctk.CTkFrame(self.body, fg_color='transparent')
+        self.build_typer(); self.build_jiggler()
+        self.typer_page.grid(row=0, column=0, sticky='nsew')
+        footer = ctk.CTkFrame(self.root, fg_color='transparent')
+        footer.grid(row=3, column=0, sticky='ew', padx=30, pady=(10,18)); footer.grid_columnconfigure(0, weight=1)
+        self.status = self.label(footer, 'Metnini ekle. Ritmini seç. Yazmaya başla.', 12, MUTED, wraplength=650, justify='left')
+        self.status.grid(row=0, column=0, sticky='w')
+        self.label(footer, 'ESC  tüm etkinlikleri durdurur', 11, MUTED).grid(row=0, column=1, sticky='e')
+        self.mutable_typing = [self.speed_menu, self.newline_menu, self.start_delay, self.min_delay, self.max_delay,
+            self.natural_switch, self.pause_switch, self.paste_btn, self.clear_btn]
 
-        # Start Delay
-        delay_frame = ctk.CTkFrame(options_frame)
-        delay_frame.pack(pady=5, padx=5, fill="x")
-        ctk.CTkLabel(delay_frame, text="Start Delay (seconds):").pack(side="left", padx=5)
-        self.start_delay = ctk.CTkEntry(delay_frame, width=70)
-        self.start_delay.insert(0, "3")
-        self.start_delay.pack(side="left", padx=5)
+    def page_title(self, page, number, title, description):
+        heading = ctk.CTkFrame(page, fg_color='transparent')
+        heading.grid(row=0, column=0, columnspan=2, sticky='ew', pady=(14,22))
+        self.label(heading, number, 11, ACCENT, 'bold').pack(anchor='w', pady=(0,5))
+        self.label(heading, title, 32, weight='bold').pack(anchor='w')
+        self.label(heading, description, 13, MUTED).pack(anchor='w', pady=(5,0))
 
-        # Sound Toggle
-        self.sound_enabled = ctk.BooleanVar(value=True)
-        sound_check = ctk.CTkCheckBox(options_frame, text="Enable Sounds", 
-                                    variable=self.sound_enabled)
-        sound_check.pack(pady=5, padx=5, side="left")
+    def build_typer(self):
+        page = self.typer_page
+        page.grid_columnconfigure(0, weight=1); page.grid_columnconfigure(1, minsize=300)
+        page.grid_rowconfigure(1, weight=1)
+        self.page_title(page, '01  /  AUTO TYPER', 'Kelimelerin, senin ritmin.', 'Metnini herhangi bir uygulamaya, seçtiğin hızda ve doğal bir ritimle yazdır.')
+        editor = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=16)
+        editor.grid(row=1, column=0, sticky='nsew', padx=(0,18)); editor.grid_columnconfigure(0, weight=1); editor.grid_rowconfigure(1, weight=1)
+        toolbar = ctk.CTkFrame(editor, fg_color='transparent'); toolbar.grid(row=0, column=0, sticky='ew', padx=20, pady=(16,10))
+        toolbar.grid_columnconfigure(0, weight=1)
+        self.label(toolbar, 'Metin alanı', 15, weight='bold').grid(row=0, column=0, sticky='w')
+        self.copy_btn = self.button(toolbar, 'Kopyala', self.copy_text, width=70); self.copy_btn.grid(row=0, column=1, padx=4)
+        self.paste_btn = self.button(toolbar, 'Yapıştır', self.paste_text, width=70); self.paste_btn.grid(row=0, column=2, padx=4)
+        self.clear_btn = self.button(toolbar, 'Temizle', self.clear_text, width=70); self.clear_btn.grid(row=0, column=3, padx=(4,0))
+        self.text_input = ctk.CTkTextbox(editor, fg_color=INSET, corner_radius=10, border_width=1, border_color=LINE,
+            font=(FONT, 16), text_color=INK, wrap='word', spacing1=5, spacing3=5)
+        self.text_input.grid(row=1, column=0, sticky='nsew', padx=16, pady=(0,12))
+        self.text_input.bind('<<Modified>>', self.on_modified)
+        self.empty_hint = self.label(self.text_input, 'Bir metinle başla.\n\nBuraya yaz veya panodan yapıştır.\nBaşlattıktan sonra hedef uygulamaya geç.', 15, MUTED, justify='left')
+        self.empty_hint.place(x=24, y=26)
+        self.empty_hint.bind('<Button-1>', lambda _: self.text_input.focus_set())
+        stats = ctk.CTkFrame(editor, fg_color='transparent'); stats.grid(row=2, column=0, sticky='ew', padx=20, pady=(0,16))
+        self.char_label = self.label(stats, '0 karakter', 12, MUTED); self.char_label.pack(side='left')
+        self.word_label = self.label(stats, '0 kelime', 12, MUTED); self.word_label.pack(side='left', padx=20)
+        self.estimate_label = self.label(stats, '≈ 00:00', 12, ACCENT); self.estimate_label.pack(side='right')
+        options = ctk.CTkScrollableFrame(page, fg_color=PANEL, corner_radius=16, width=280)
+        options.grid(row=1, column=1, sticky='nsew'); options.grid_columnconfigure(0, weight=1)
+        self.label(options, 'Yazma ayarları', 17, weight='bold').grid(row=0, column=0, sticky='w', padx=16, pady=(16,18))
+        self.label(options, 'Yazma hızı', 12, MUTED).grid(row=1, column=0, sticky='w', padx=16)
+        self.speed_menu = ctk.CTkOptionMenu(options, values=list(SPEEDS), variable=self.speed, command=self.settings_changed,
+            height=38, fg_color=LINE, button_color=LINE, button_hover_color='#435447', dropdown_fg_color=PANEL,
+            dropdown_hover_color=LINE, text_color=INK, font=(FONT, 14), corner_radius=8)
+        self.speed_menu.grid(row=2, column=0, sticky='ew', padx=16, pady=(8,6))
+        self.speed_hint = self.label(options, '100 ms / karakter', 11, ACCENT); self.speed_hint.grid(row=3, column=0, sticky='w', padx=16)
+        self.random_frame = ctk.CTkFrame(options, fg_color='transparent')
+        self.random_frame.grid(row=4, column=0, sticky='ew', padx=16, pady=(8,0))
+        self.min_delay = self.entry(self.random_frame, 10); self.min_delay.pack(side='left')
+        self.label(self.random_frame, ' – ', 12, MUTED).pack(side='left')
+        self.max_delay = self.entry(self.random_frame, 5000); self.max_delay.pack(side='left')
+        self.label(self.random_frame, ' ms', 12, MUTED).pack(side='left'); self.random_frame.grid_remove()
+        delay_row = ctk.CTkFrame(options, fg_color='transparent'); delay_row.grid(row=5, column=0, sticky='ew', padx=16, pady=(20,12))
+        self.label(delay_row, 'Başlangıç beklemesi', 13).pack(side='left')
+        self.start_delay = self.entry(delay_row, 3, 54); self.start_delay.pack(side='right')
+        self.label(options, 'Hedef uygulamaya geçmek için saniye.', 11, MUTED).grid(row=6, column=0, sticky='w', padx=16)
+        ctk.CTkFrame(options, height=1, fg_color=LINE).grid(row=7, column=0, sticky='ew', padx=16, pady=20)
+        self.natural_switch = self.switch(options, 'Doğal yazma', self.natural, self.update_stats)
+        self.natural_switch.grid(row=8, column=0, sticky='w', padx=16, pady=(0,12))
+        self.pause_switch = self.switch(options, 'Kelimeler arasında bekle', self.word_pauses, self.update_stats)
+        self.pause_switch.grid(row=9, column=0, sticky='w', padx=16, pady=(0,18))
+        self.label(options, 'Satır sonları', 12, MUTED).grid(row=10, column=0, sticky='w', padx=16)
+        self.newline_menu = ctk.CTkOptionMenu(options, values=list(NEWLINES), variable=self.newline, command=lambda _: self.update_stats(),
+            height=36, fg_color=LINE, button_color=LINE, button_hover_color='#435447', dropdown_fg_color=PANEL,
+            text_color=INK, font=(FONT, 13), corner_radius=8)
+        self.newline_menu.grid(row=11, column=0, sticky='ew', padx=16, pady=(8,18))
+        self.switch(options, 'Ses bildirimleri', self.sound).grid(row=12, column=0, sticky='w', padx=16, pady=(0,18))
+        for entry in (self.start_delay, self.min_delay, self.max_delay): entry.bind('<KeyRelease>', lambda _: self.update_stats())
+        controls = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=14)
+        controls.grid(row=2, column=0, columnspan=2, sticky='ew', pady=(16,0)); controls.grid_columnconfigure(0, weight=1)
+        self.run_label = self.label(controls, 'Başlamaya hazır', 15, weight='bold'); self.run_label.grid(row=0, column=0, sticky='w', padx=20, pady=(14,0))
+        self.progress_label = self.label(controls, 'Hedef uygulamaya geçmek için 3 saniyen olacak.', 12, MUTED)
+        self.progress_label.grid(row=1, column=0, sticky='w', padx=20, pady=(4,12))
+        self.progress = ctk.CTkProgressBar(controls, height=4, fg_color=LINE, progress_color=ACCENT)
+        self.progress.set(0); self.progress.grid(row=2, column=0, columnspan=3, sticky='ew', padx=20, pady=(0,16))
+        self.stop_btn = self.button(controls, 'Durdur', self.stop_typing, width=90, state='disabled')
+        self.stop_btn.grid(row=0, column=1, rowspan=2, padx=8)
+        self.start_btn = self.button(controls, 'Yazmaya başla  ↗', self.start_typing, primary=True, width=178)
+        self.start_btn.grid(row=0, column=2, rowspan=2, padx=(0,20))
 
-        # Natural Typing
-        self.natural_typing = ctk.BooleanVar(value=False)
-        natural_check = ctk.CTkCheckBox(options_frame, text="Natural Typing", 
-                                      variable=self.natural_typing)
-        natural_check.pack(pady=5, padx=5, side="left")
+    def build_jiggler(self):
+        page = self.jiggler_page
+        page.grid_columnconfigure(0, weight=1); page.grid_columnconfigure(1, minsize=300); page.grid_rowconfigure(1, weight=1)
+        self.page_title(page, '02  /  MOUSE JIGGLER', 'Küçük hareket. Kesintisiz akış.', 'Sen boşta kaldığında imleci hafifçe hareket ettirir ve yerine getirir.')
+        hero = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=16)
+        hero.grid(row=1, column=0, sticky='nsew', padx=(0,18)); hero.grid_columnconfigure(0, weight=1); hero.grid_rowconfigure(0, weight=1)
+        self.canvas = tk.Canvas(hero, bg=PANEL, highlightthickness=0, height=200)
+        self.canvas.grid(row=0, column=0, sticky='nsew', padx=16, pady=(16,0))
+        self.canvas.bind('<Configure>', self.draw_cursor)
+        self.jig_state = self.label(hero, 'İmleç dinleniyor.', 25, weight='bold'); self.jig_state.grid(row=1, column=0, pady=(2,6))
+        self.jig_description = self.label(hero, 'Başlatana kadar fare hareketi yapılmaz.', 13, MUTED)
+        self.jig_description.grid(row=2, column=0, pady=(0,24))
+        stats = ctk.CTkFrame(hero, fg_color=INSET, corner_radius=12)
+        stats.grid(row=3, column=0, sticky='ew', padx=24, pady=(0,24)); stats.grid_columnconfigure((0,1,2), weight=1)
+        self.elapsed_label = self.label(stats, '00:00', 24, ACCENT); self.elapsed_label.grid(row=0, column=0, pady=(16,3))
+        self.moves_label = self.label(stats, '0', 24, ACCENT); self.moves_label.grid(row=0, column=1, pady=(16,3))
+        self.idle_label = self.label(stats, '00:00', 24, ACCENT); self.idle_label.grid(row=0, column=2, pady=(16,3))
+        for i, title in enumerate(('Geçen süre', 'Hareket', 'Boşta süre')): self.label(stats, title, 11, MUTED).grid(row=1, column=i, pady=(0,16))
+        settings = ctk.CTkScrollableFrame(page, fg_color=PANEL, corner_radius=16, width=280)
+        settings.grid(row=1, column=1, sticky='nsew'); settings.grid_columnconfigure(0, weight=1)
+        self.label(settings, 'Hareket ayarları', 17, weight='bold').grid(row=0, column=0, sticky='w', padx=22, pady=(22,24))
+        self.label(settings, 'Boşta kalma eşiği', 13).grid(row=1, column=0, sticky='w', padx=22)
+        row = ctk.CTkFrame(settings, fg_color='transparent'); row.grid(row=2, column=0, sticky='w', padx=22, pady=(8,8))
+        self.idle_entry = self.entry(row, 60, 100); self.idle_entry.pack(side='left')
+        self.label(row, ' saniye', 12, MUTED).pack(side='left', padx=8)
+        self.label(settings, 'Son girişinden sonra bu kadar bekler.', 11, MUTED).grid(row=3, column=0, sticky='w', padx=22)
+        self.label(settings, 'Hareket aralığı', 13).grid(row=4, column=0, sticky='w', padx=22, pady=(24,0))
+        row = ctk.CTkFrame(settings, fg_color='transparent'); row.grid(row=5, column=0, sticky='w', padx=22, pady=(8,8))
+        self.interval_entry = self.entry(row, 30, 100); self.interval_entry.pack(side='left')
+        self.label(row, ' saniye', 12, MUTED).pack(side='left', padx=8)
+        self.label(settings, 'Hareketler arasındaki en kısa süre.', 11, MUTED).grid(row=6, column=0, sticky='w', padx=22)
+        ctk.CTkFrame(settings, height=1, fg_color=LINE).grid(row=7, column=0, sticky='ew', padx=22, pady=24)
+        self.f18_switch = self.switch(settings, 'F18 tuş etkinliği', self.f18)
+        self.f18_switch.grid(row=8, column=0, sticky='w', padx=22)
+        self.label(settings, 'İsteğe bağlıdır. Bazı uygulamalarda\nbir kısayolu tetikleyebilir.', 11, MUTED, justify='left').grid(row=9, column=0, sticky='w', padx=22, pady=(10,20))
+        self.label(settings, 'Yazma sırasında otomatik bekler.\nTıklama yapmaz. ESC ile durur.', 12, ACCENT, justify='left').grid(row=10, column=0, sticky='w', padx=22, pady=(0,20))
+        controls = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=14)
+        controls.grid(row=2, column=0, columnspan=2, sticky='ew', pady=(16,0)); controls.grid_columnconfigure(0, weight=1)
+        self.label(controls, 'Kontrol sende.', 15, weight='bold').grid(row=0, column=0, sticky='w', padx=20, pady=(18,4))
+        self.label(controls, 'Yalnızca açıkken çalışır. Uygulamayı kapatınca durur.', 12, MUTED).grid(row=1, column=0, sticky='w', padx=20, pady=(0,18))
+        self.jig_stop_btn = self.button(controls, 'Durdur', self.stop_jiggler, width=90, state='disabled')
+        self.jig_stop_btn.grid(row=0, column=1, rowspan=2, padx=8)
+        self.jig_start_btn = self.button(controls, 'Jiggler’ı başlat  ↗', self.start_jiggler, primary=True, width=178)
+        self.jig_start_btn.grid(row=0, column=2, rowspan=2, padx=(0,20))
 
-        # Word Pauses
-        self.word_pauses = ctk.BooleanVar(value=False)
-        word_pause_check = ctk.CTkCheckBox(options_frame, text="Pause Between Words", 
-                                         variable=self.word_pauses)
-        word_pause_check.pack(pady=5, padx=5, side="left")
+    def draw_cursor(self, event=None):
+        canvas = self.canvas; canvas.delete('all')
+        x = canvas.winfo_width()/2; y = canvas.winfo_height()/2
+        for r, color in ((94,'#222E26'), (69,'#29382D'), (44,'#354C3A')):
+            canvas.create_oval(x-r, y-r, x+r, y+r, fill=color, outline='')
+        canvas.create_oval(x-95,y-95,x+95,y+95,outline='#3A5140',dash=(3,8))
+        canvas.create_line(x-122,y,x-106,y,fill=ACCENT,width=2)
+        canvas.create_line(x+106,y,x+122,y,fill=ACCENT,width=2)
+        canvas.create_polygon(x-18,y-31,x-18,y+29,x-3,y+15,x+10,y+39,x+22,y+33,x+8,y+10,x+30,y+9,
+            fill=ACCENT, outline=INK, width=2)
+        canvas.create_text(x+74,y-57,text='1 pt',fill=MUTED,font=(FONT,11))
 
-        # Newline Handling
-        newline_frame = ctk.CTkFrame(self.root)
-        newline_frame.pack(pady=5, padx=10, fill="x")
-        ctk.CTkLabel(newline_frame, text="Newline Handling:").pack(side="left", padx=5)
-        self.newline_var = ctk.StringVar(value="space")
-        newline_options = [
-            ("Space", "space"),
-            ("Shift+Enter", "shift_enter"),
-            ("Ignore", "ignore")
-        ]
-        for text, value in newline_options:
-            ctk.CTkRadioButton(newline_frame, text=text, value=value,
-                             variable=self.newline_var).pack(side="left", padx=5)
+    def show_page(self, value):
+        self.page = value
+        self.typer_page.grid_remove(); self.jiggler_page.grid_remove()
+        (self.typer_page if value == 'Auto Typer' else self.jiggler_page).grid(row=0,column=0,sticky='nsew')
 
-        # Custom delay frame for Kaotic Random mode
-        self.random_frame = ctk.CTkFrame(self.root)
-        self.random_frame.pack(pady=10, padx=10, fill="x")
-        
-        ctk.CTkLabel(self.random_frame, text="Random Delay Range (ms):").pack(side="left", padx=5)
-        self.min_delay = ctk.CTkEntry(self.random_frame, width=70)
-        self.min_delay.insert(0, "10")
-        self.min_delay.pack(side="left", padx=5)
-        
-        ctk.CTkLabel(self.random_frame, text="to").pack(side="left", padx=5)
-        
-        self.max_delay = ctk.CTkEntry(self.random_frame, width=70)
-        self.max_delay.insert(0, "5000")
-        self.max_delay.pack(side="left", padx=5)
-        
-        # Control buttons frame
-        control_frame = ctk.CTkFrame(self.root)
-        control_frame.pack(pady=10, padx=10, fill="x")
-        
-        # Start and Stop buttons
-        self.start_btn = ctk.CTkButton(
-            control_frame,
-            text="Start Typing",
-            command=self.start_typing
-        )
-        self.start_btn.pack(side="left", padx=5, expand=True)
-        
-        self.stop_btn = ctk.CTkButton(
-            control_frame,
-            text="Stop",
-            command=self.stop_typing,
-            state="disabled"
-        )
-        self.stop_btn.pack(side="left", padx=5, expand=True)
-        
-        # Stats Frame
-        stats_frame = ctk.CTkFrame(self.root)
-        stats_frame.pack(pady=5, padx=10, fill="x")
-        
-        self.char_count_label = ctk.CTkLabel(stats_frame, text="Characters: 0")
-        self.char_count_label.pack(side="left", padx=5)
-        
-        self.word_count_label = ctk.CTkLabel(stats_frame, text="Words: 0")
-        self.word_count_label.pack(side="left", padx=5)
+    def tell(self, text, error=False): self.status.configure(text=text, text_color=DANGER if error else MUTED)
 
-        # Time estimation labels
-        time_frame = ctk.CTkFrame(stats_frame)
-        time_frame.pack(side="right", padx=5)
-        
-        self.time_estimate_label = ctk.CTkLabel(time_frame, text="Est. Time: 0:00")
-        self.time_estimate_label.pack(side="right", padx=5)
-        
-        self.progress_label = ctk.CTkLabel(stats_frame, text="Progress: 0%")
-        self.progress_label.pack(side="right", padx=5)
+    def check_permissions(self):
+        allowed = self.backend.allowed()
+        if allowed: self.permission_bar.grid_remove()
+        else: self.permission_bar.grid()
+        return allowed
 
-        # Status bar
-        status_frame = ctk.CTkFrame(self.root)
-        status_frame.pack(pady=5, padx=10, fill="x", side="bottom")
-        
-        self.status_label = ctk.CTkLabel(
-            status_frame,
-            text="Press ESC for Emergency Stop",
-            text_color="red"
-        )
-        self.status_label.pack(pady=5, side="left")
-        
-        self.status_text = ctk.CTkLabel(
-            status_frame,
-            text="Ready",
-            text_color="yellow"
-        )
-        self.status_text.pack(pady=5, side="right")
+    def ensure_permission(self):
+        if not self.check_permissions():
+            self.tell('Erişilebilirlik izni gerekiyor. İzin ayarlarını açıp uygulamayı etkinleştir.', True); return False
+        if not self.listener_started or not self.backend.escape_healthy():
+            self.listener_started = False
+            try: self.backend.listen_escape(self.emergency_stop); self.listener_started = True
+            except Exception as exc:
+                self.tell(f'Global ESC dinleyicisi başlatılamadı: {exc}', True); return False
+        return True
+
+    def settings_changed(self, value=None):
+        random_mode = self.speed.get() == 'Rastgele'
+        if random_mode: self.random_frame.grid()
+        else: self.random_frame.grid_remove()
+        self.speed_hint.configure(text='Her karakterde farklı bekleme' if random_mode else f'{SPEEDS[self.speed.get()]} ms / karakter')
+        self.update_stats()
+
+    def config(self):
+        try:
+            return TypingConfig(delay_ms=SPEEDS[self.speed.get()], start_delay=float(self.start_delay.get()),
+                min_ms=int(self.min_delay.get()), max_ms=int(self.max_delay.get()), natural=self.natural.get(),
+                word_pauses=self.word_pauses.get(), newline=NEWLINES[self.newline.get()]).validate()
+        except (ValueError, KeyError) as exc:
+            if 'aralığında' in str(exc): raise
+            raise ValueError('Bekleme alanlarına geçerli sayılar girin.') from exc
+
+    def on_modified(self, event=None):
+        if self.text_input.edit_modified():
+            self.text_input.edit_modified(False); self.update_stats()
+
+    def update_stats(self):
+        text = self.text_input.get('1.0', 'end-1c')
+        self.char_label.configure(text=f'{len(text):,} karakter'); self.word_label.configure(text=f'{len(text.split()):,} kelime')
+        if text: self.empty_hint.place_forget()
+        else: self.empty_hint.place(x=24,y=26)
+        if not self.typing_active.is_set():
+            try:
+                config = self.config(); self.estimate_label.configure(text=f'≈ {duration(config.estimate(text))}')
+                self.progress_label.configure(text=f'Hedef uygulamaya geçmek için {config.start_delay:g} saniyen olacak.')
+            except ValueError: self.estimate_label.configure(text='Ayarları kontrol et')
 
     def copy_text(self):
-        text = self.text_input.get("1.0", "end-1c")
-        pyperclip.copy(text)
-        self.status_text.configure(text="Text copied!", text_color="green")
-        self.root.after(1000, lambda: self.status_text.configure(text="Ready", text_color="yellow"))
+        text = self.text_input.get('1.0', 'end-1c')
+        if not text: self.tell('Kopyalanacak metin yok.'); return
+        self.root.clipboard_clear(); self.root.clipboard_append(text); self.tell('Metin panoya kopyalandı.')
 
     def paste_text(self):
-        text = pyperclip.paste()
-        self.text_input.delete("1.0", "end")
-        self.text_input.insert("1.0", text)
-        self.update_text_stats()
-        self.status_text.configure(text="Text pasted!", text_color="green")
-        self.root.after(1000, lambda: self.status_text.configure(text="Ready", text_color="yellow"))
+        if self.typing_active.is_set(): return
+        try: text = self.root.clipboard_get()
+        except tk.TclError: self.tell('Panoda metin bulunamadı.', True); return
+        self.text_input.delete('1.0','end'); self.text_input.insert('1.0',text); self.update_stats(); self.tell('Metin panodan eklendi.')
 
     def clear_text(self):
-        self.text_input.delete("1.0", "end")
-        self.update_text_stats()
-        self.status_text.configure(text="Text cleared!", text_color="green")
-        self.root.after(1000, lambda: self.status_text.configure(text="Ready", text_color="yellow"))
+        if self.typing_active.is_set(): return
+        self.text_input.delete('1.0','end'); self.update_stats(); self.progress.set(0); self.tell('Metin alanı temizlendi.')
 
-    def get_delay(self):
-        delay = int(self.speed_var.get())
-        if delay == -1:  # Kaotic Random mode
-            min_d = int(self.min_delay.get())
-            max_d = int(self.max_delay.get())
-            return random.randint(min_d, max_d) / 1000.0
-        return delay / 1000.0
-
-    def format_time(self, seconds):
-        """Convert seconds to MM:SS format"""
-        if seconds < 60:
-            return f"0:{seconds:02.0f}"
-        minutes = int(seconds // 60)
-        seconds = int(seconds % 60)
-        return f"{minutes}:{seconds:02d}"
-
-    def calculate_typing_time(self, text_length=None):
-        """Calculate estimated typing time based on current settings"""
-        if text_length is None:
-            text = self.text_input.get("1.0", "end-1c")
-            text_length = len(text)
-
-        if text_length == 0:
-            return 0
-
-        # Get base delay
-        if self.speed_var.get() == "-1":  # Kaotic Random mode
-            try:
-                min_d = int(self.min_delay.get())
-                max_d = int(self.max_delay.get())
-                avg_delay = (min_d + max_d) / 2 / 1000.0
-            except ValueError:
-                avg_delay = 0.1
-        else:
-            avg_delay = int(self.speed_var.get()) / 1000.0
-
-        # Account for natural typing variation
-        if self.natural_typing.get():
-            avg_delay *= 1.15  # Add 15% to account for variations
-
-        # Calculate word pause impact
-        if self.word_pauses.get():
-            space_count = text.count(' ') if 'text' in locals() else text_length // 5
-            total_pause_time = space_count * (avg_delay * 2)  # Double delay for word pauses
-        else:
-            total_pause_time = 0
-
-        # Calculate total time
-        try:
-            start_delay = float(self.start_delay.get())
-        except ValueError:
-            start_delay = 3
-
-        total_time = (text_length * avg_delay) + total_pause_time + start_delay
-        return total_time
-
-    def update_time_estimate(self, chars_typed=0, total_chars=None):
-        """Update the time estimation label"""
-        if total_chars is None:
-            total_chars = len(self.text_input.get("1.0", "end-1c"))
-        
-        if total_chars == 0:
-            self.time_estimate_label.configure(text="Est. Time: 0:00")
-            return
-
-        if chars_typed == 0:
-            # Before starting, show total estimated time
-            total_time = self.calculate_typing_time(total_chars)
-            self.time_estimate_label.configure(text=f"Est. Time: {self.format_time(total_time)}")
-        else:
-            # During typing, show remaining time
-            chars_remaining = total_chars - chars_typed
-            remaining_time = self.calculate_typing_time(chars_remaining)
-            self.time_estimate_label.configure(text=f"Time Left: {self.format_time(remaining_time)}")
-
-    def update_text_stats(self):
-        text = self.text_input.get("1.0", "end-1c")
-        char_count = len(text)
-        word_count = len(text.split())
-        self.char_count_label.configure(text=f"Characters: {char_count}")
-        self.word_count_label.configure(text=f"Words: {word_count}")
-        self.update_time_estimate()  # Update time estimate when text changes
-
-    def _on_text_modified(self, event=None):
-        self.update_text_stats()
-        self.text_input.edit_modified(False)  # Reset modified flag
-
-    def play_sound(self, sound_name):
-        if not self.sound_enabled.get():
-            return
-            
-        try:
-            sound_path = os.path.join(os.path.dirname(__file__), "sounds", f"{sound_name}.wav")
-            if os.path.exists(sound_path):
-                winsound.PlaySound(sound_path, winsound.SND_FILENAME | winsound.SND_ASYNC)
-        except Exception as e:
-            print(f"Sound error: {e}")
-
-    def natural_delay(self):
-        if self.natural_typing.get():
-            # Add some natural variation (±30% of base delay)
-            base_delay = self.get_delay()
-            variation = base_delay * 0.3
-            return base_delay + random.uniform(-variation, variation)
-        return self.get_delay()
-
-    def type_text(self):
-        self.text_to_type = self.text_input.get("1.0", "end-1c")
-        total_chars = len(self.text_to_type)
-        chars_typed = 0
-        
-        # Start delay
-        try:
-            start_delay = float(self.start_delay.get())
-        except ValueError:
-            start_delay = 3
-        
-        self.status_text.configure(text=f"Starting in {start_delay} seconds...", text_color="yellow")
-        time.sleep(start_delay)
-        
-        self.play_sound("start")
-        self.status_text.configure(text="Typing...", text_color="green")
-
-        last_char = ' '
-        for char in self.text_to_type:
-            if not self.is_typing:
-                break
-
-            # Handle newlines more carefully
-            if char == '\n':
-                if self.newline_var.get() == "space":
-                    keyboard.write(' ')
-                elif self.newline_var.get() == "shift_enter":
-                    keyboard.press('shift')
-                    keyboard.press('enter')
-                    time.sleep(0.05)  # Small delay to ensure keys are registered
-                    keyboard.release('enter')
-                    keyboard.release('shift')
-                # Even if ignore is selected, we still count the character
-            else:
-                # Type the character
-                keyboard.write(char)
-            
-            chars_typed += 1
-            progress = (chars_typed / total_chars) * 100
-            self.progress_label.configure(text=f"Progress: {progress:.1f}%")
-            self.update_time_estimate(chars_typed, total_chars)
-
-            # Word pause
-            if self.word_pauses.get() and last_char != ' ' and char == ' ':
-                time.sleep(self.natural_delay() * 2)  # Longer pause between words
-            else:
-                time.sleep(self.natural_delay())
-            
-            last_char = char
-
-        self.is_typing = False
-        self.start_btn.configure(state="normal")
-        self.stop_btn.configure(state="disabled")
-        self.status_text.configure(text="Ready", text_color="yellow")
-        
-        if chars_typed >= total_chars:
-            self.play_sound("finish")
-            self.progress_label.configure(text="Progress: 100%")
+    def sound_event(self, name):
+        if self.sound.get(): play_sound(name)
 
     def start_typing(self):
-        if not self.is_typing:
-            self.is_typing = True
-            self.start_btn.configure(state="disabled")
-            self.stop_btn.configure(state="normal")
-            self.typing_thread = threading.Thread(target=self.type_text)
-            self.typing_thread.start()
+        if self.typing_thread and self.typing_thread.is_alive(): return
+        text = self.text_input.get('1.0','end-1c')
+        if not text: self.tell('Başlamadan önce metin ekle.', True); self.text_input.focus_set(); return
+        try: config = self.config()
+        except ValueError as exc: self.tell(str(exc),True); return
+        if not self.ensure_permission(): return
+        self.active_text = text; self.active_config = config; self.total = len(text); self.typed = 0
+        self.typing_events = queue.Queue(); self.typing_stop.clear(); self.typing_active.set()
+        self.text_input.configure(state='disabled')
+        for widget in self.mutable_typing: widget.configure(state='disabled')
+        self.start_btn.configure(state='disabled'); self.stop_btn.configure(state='normal')
+        self.progress.set(0); self.tell('Hedef uygulamaya geç. ESC ile istediğin an durdurabilirsin.')
+        self.typing_thread = threading.Thread(target=type_text,args=(text,config,self.backend,self.typing_stop,self.typing_events),daemon=True)
+        self.typing_thread.start()
 
     def stop_typing(self):
-        self.is_typing = False
-        self.start_btn.configure(state="normal")
-        self.stop_btn.configure(state="disabled")
-        self.status_text.configure(text="Stopped", text_color="yellow")
-        self.play_sound("stop")
+        if self.typing_active.is_set():
+            self.typing_stop.set(); self.stop_btn.configure(state='disabled'); self.run_label.configure(text='Durduruluyor…')
 
-    def emergency_stop(self, e):
-        if self.is_typing:
-            self.is_typing = False
-            self.start_btn.configure(state="normal")
-            self.stop_btn.configure(state="disabled")
-            self.status_text.configure(text="Emergency Stop!", text_color="red")
-            self.play_sound("emergency")
-            # Reset after 2 seconds
-            self.root.after(2000, lambda: self.status_text.configure(text="Ready", text_color="yellow"))
+    def emergency_stop(self):
+        # May run on the native listener thread. Only touch synchronization primitives.
+        self.typing_stop.set(); self.jiggler_stop.set()
 
-    def run(self):
-        self.root.mainloop()
+    def finish_typing(self, kind, detail):
+        self.typing_active.clear()
+        self.text_input.configure(state='normal')
+        for widget in self.mutable_typing: widget.configure(state='normal')
+        self.start_btn.configure(state='normal'); self.stop_btn.configure(state='disabled')
+        labels = {'finished':'Yazma tamamlandı.', 'stopped':'Yazma durduruldu.', 'error':'Yazma başarısız.'}
+        self.run_label.configure(text=labels[kind])
+        self.tell(detail if kind == 'error' else labels[kind], kind == 'error')
+        self.sound_event('finish' if kind == 'finished' else 'stop')
+        if kind == 'finished': self.progress.set(1)
+        self.progress_label.configure(text=f'{self.typed} / {self.total} karakter  ·  %{round(self.typed/max(1,self.total)*100)}')
 
-if __name__ == "__main__":
-    app = AutoTyper()
-    app.run()
+    def start_jiggler(self):
+        if self.jiggler_thread and self.jiggler_thread.is_alive(): return
+        if sys.platform != 'darwin': self.tell('Mouse Jiggler bu sürümde macOS gerektirir.',True); return
+        try: config = JigglerConfig(float(self.idle_entry.get()),float(self.interval_entry.get()),self.f18.get()).validate()
+        except ValueError as exc: self.tell(str(exc) if 'aralığında' in str(exc) else 'Süre alanlarına geçerli sayılar girin.',True); return
+        if not self.ensure_permission(): return
+        self.jiggler_events = queue.Queue(); self.jiggler_stop.clear(); self.jiggler_started = time.monotonic(); self.movement_count = 0
+        self.moves_label.configure(text='0'); self.jig_start_btn.configure(state='disabled'); self.jig_stop_btn.configure(state='normal')
+        for widget in (self.idle_entry,self.interval_entry,self.f18_switch): widget.configure(state='disabled')
+        self.jig_state.configure(text='Jiggler etkin.'); self.tell('Mouse Jiggler başladı. Yalnızca boşta kaldığında hareket eder.')
+        self.jiggler_thread = threading.Thread(target=jiggle,args=(config,self.backend,self.jiggler_stop,self.typing_active.is_set,self.jiggler_events),daemon=True)
+        self.jiggler_thread.start()
+
+    def stop_jiggler(self):
+        if self.jiggler_thread and self.jiggler_thread.is_alive():
+            self.jiggler_stop.set(); self.jig_stop_btn.configure(state='disabled'); self.jig_state.configure(text='Durduruluyor…')
+
+    def poll(self):
+        if self.closing: return
+        listener_failed = self.listener_started and not self.backend.escape_healthy()
+        if listener_failed:
+            self.listener_started = False
+            self.emergency_stop()
+        # Bound each drain so very fast typing cannot starve the UI event loop.
+        for _ in range(500):
+            try: kind, value = self.typing_events.get_nowait()
+            except queue.Empty: break
+            if kind == 'countdown': self.run_label.configure(text=f'{value:.1f} saniye sonra başlıyor…')
+            elif kind == 'typing': self.run_label.configure(text='Yazılıyor…'); self.sound_event('start')
+            elif kind == 'progress':
+                self.typed = value; self.progress.set(value/max(1,self.total))
+                remaining = self.active_config.estimate(self.active_text[value:],include_start=False)
+                self.progress_label.configure(text=f'{value} / {self.total} karakter  ·  %{round(value/max(1,self.total)*100)}  ·  ≈ {duration(remaining)} kaldı')
+            elif kind in ('finished','stopped','error'): self.finish_typing(kind,value)
+        for _ in range(100):
+            try: kind, value = self.jiggler_events.get_nowait()
+            except queue.Empty: break
+            if kind == 'movement': self.movement_count = value; self.moves_label.configure(text=str(value))
+            elif kind == 'idle': self.idle_label.configure(text=duration(value))
+            elif kind in ('jiggler_stopped','jiggler_error'):
+                self.jig_state.configure(text='Jiggler durduruldu.' if kind == 'jiggler_stopped' else 'Jiggler başarısız.')
+                self.jig_start_btn.configure(state='normal'); self.jig_stop_btn.configure(state='disabled')
+                for widget in (self.idle_entry,self.interval_entry,self.f18_switch): widget.configure(state='normal')
+                self.tell(value if kind == 'jiggler_error' else 'Mouse Jiggler durduruldu.', kind == 'jiggler_error')
+        jig_active = bool(self.jiggler_thread and self.jiggler_thread.is_alive())
+        typing = self.typing_active.is_set()
+        self.activity_badge.configure(text='●  Yazılıyor · Jiggler bekliyor' if typing and jig_active else '●  Yazılıyor' if typing else '●  Jiggler etkin' if jig_active else '●  Hazır')
+        if jig_active:
+            self.elapsed_label.configure(text=duration(time.monotonic()-self.jiggler_started))
+            self.jig_description.configure(text='Yazma bitene kadar bekliyor.' if typing else 'Boşta kalma süreni izliyor. ESC ile durdurabilirsin.')
+        else: self.jig_description.configure(text='Başlatana kadar fare hareketi yapılmaz.')
+        if listener_failed:
+            self.tell('Global ESC bağlantısı kesildi; etkinlikler durduruldu. İzni kontrol edip yeniden başlat.', True)
+        self.root.after(100,self.poll)
+
+    def close(self):
+        if self.closing: return
+        self.closing = True; self.emergency_stop(); self.backend.close()
+        self.root.withdraw(); self.await_shutdown()
+
+    def await_shutdown(self):
+        if any(t and t.is_alive() for t in (self.typing_thread,self.jiggler_thread, self.backend.listener if hasattr(self.backend, 'listener') else None)):
+            self.root.after(30,self.await_shutdown)
+        else: self.root.destroy()
+
+    def run(self): self.root.mainloop()
+
+
+if __name__ == '__main__': AutoTyper().run()

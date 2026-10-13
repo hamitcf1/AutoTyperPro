@@ -1,5 +1,5 @@
-keyboard==0.13.5
-customtkinter==5.2.0
-pyperclip==1.8.2
-# Development dependencies
-pyinstaller==6.10.0
+customtkinter>=5.2.2,<6
+pynput>=1.8.1,<2
+pyinstaller>=6.16,<7
+
+Pillow>=11,<13
