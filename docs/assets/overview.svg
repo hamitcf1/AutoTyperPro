@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+<title id="title">AutoTyper Pro: two local desktop tools</title><desc id="desc">Auto Typer controls typing speed and rhythm. Mouse Jiggler adds optional idle activity. Local processing and Escape to stop.</desc>
+<rect width="1200" height="330" rx="24" fill="#141816"/>
+<path d="M600 48v234" stroke="#303c34"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="54" y="64" font-size="13" letter-spacing="3" fill="#acd5ae">01 / TYPE WITH INTENTION</text>
+<text x="54" y="132" font-size="43" font-weight="700" fill="#f0f3ef">Your words.</text><text x="54" y="184" font-size="43" font-weight="700" fill="#f0f3ef">Your rhythm.</text>
+<text x="54" y="228" font-size="18" fill="#97a79c">Speed, timing and newline control.</text>
+<rect x="54" y="264" width="150" height="30" rx="15" fill="#303c34"/><text x="75" y="284" font-size="13" fill="#acd5ae">LOCAL PROCESSING</text>
+<text x="652" y="64" font-size="13" letter-spacing="3" fill="#acd5ae">02 / MOUSE JIGGLER • ANTI-AFK</text>
+<text x="652" y="132" font-size="43" font-weight="700" fill="#f0f3ef">Small movements.</text><text x="652" y="184" font-size="43" font-weight="700" fill="#f0f3ef">Full control.</text>
+<text x="652" y="228" font-size="18" fill="#97a79c">Idle-triggered activity. Optional F18.</text>
+<rect x="652" y="264" width="143" height="30" rx="15" fill="#303c34"/><text x="674" y="284" font-size="13" fill="#acd5ae">ESCAPE TO STOP</text>
+</g></svg>

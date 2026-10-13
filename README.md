@@ -1,59 +1,76 @@
-# AutoTyper Pro 2.1
+<p align="center"><img src="assets/icon.png" width="88" alt="AutoTyper Pro icon"></p>
+<h1 align="center">AutoTyper Pro</h1>
+<p align="center"><strong>Less repetition. Your pace. Your control.</strong><br>Automatic typing and Mouse Jiggler / Anti-AFK for macOS and Windows.</p>
+<p align="center"><a href="https://github.com/hamitcf1/AutoTyperPro/releases/latest">Download</a> · <a href="docs/INSTALLATION.md">Installation & permissions</a> · <a href="CONTRIBUTING.md">Contribute</a> · <a href="README_TR.md">Türkçe</a></p>
 
-Mac için iki yerel araç: doğal ritimde otomatik yazma ve bağımsız Mouse Jiggler. Yenilenen Türkçe arayüz, grafit yüzeyler, geniş metin editörü, canlı ilerleme ve açık çalışma durumları sunar. Veriler cihazında kalır.
+![AutoTyper Pro overview](docs/assets/overview.svg)
 
-[İndir: macOS / Windows](https://github.com/hamitcf1/AutoTyperPro/releases/tag/v2.1.0) · [English documentation](README_EN.md)
+AutoTyper Pro is a local desktop utility for repetitive typing and small, idle-triggered mouse movements. Paste your text, choose a rhythm, and switch to the target application during the countdown. Start Mouse Jiggler independently when you need it. **Escape stops both tools.**
 
-Mac: işlemcine uygun DMG’yi aç, uygulamayı Applications’a sürükle ve kurulu kopyayı aç. Windows: installer `.exe` veya tamamen çıkartılmış portable ZIP kullan. İlk açılışta kısa bir tanıtım gösterilir; atlanabilir ve sonradan Tanıtım düğmesiyle tekrar açılabilir.
+No account. No telemetry. No automatic activity on launch.
 
-## Bu Mac’te çalıştırma
+## Download
 
-Bu Mac’e kurulan uygulama: `~/Applications/AutoTyperPro.app`. Finder’dan çift tıklayarak aç. Yeniden oluşturulan paket `dist/AutoTyperPro.app` altında bulunur.
+| Platform | Recommended download | Alternative |
+| --- | --- | --- |
+| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-macos-arm64.dmg) | M-series Macs |
+| macOS — Intel | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-macos-x64.dmg) | Intel Macs |
+| Windows — x64 | [Setup installer](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-windows-x64-portable.zip) |
 
-Kaynak koddan:
+[All releases, SHA-256 checksums and build verification](https://github.com/hamitcf1/AutoTyperPro/releases/latest)
+
+**Release status:** the downloadable version is **2.1.0**, whose application interface is Turkish. The repository documentation is English-first. The main branch additionally fixes explicit macOS permission requests and a macOS 27 ESC-listener crash; these fixes are not included in the 2.1.0 downloads yet. English/Turkish language selection, custom activity profiles and macro recording are [proposed for the next major version](docs/global-product-design.md).
+
+Packages are not Developer ID notarized or Windows Authenticode signed. See the [installation guide](docs/INSTALLATION.md) before opening them.
+
+## What you can do today
+
+| Auto Typer | Mouse Jiggler / Anti-AFK |
+| --- | --- |
+| Six speed modes, including a custom random range | Independent start and stop controls |
+| Start delay from 0 to 60 seconds | Adjustable idle threshold and activity interval |
+| Natural timing variation and word pauses | Small cursor movement with return to the original position |
+| Newlines as spaces, Shift+Enter or skipped | Optional F18 key activity, off by default |
+| Unicode typing, live progress and time estimate | Automatically waits while Auto Typer runs |
+| Optional sound notifications | Avoids restoring the cursor over a user's mouse movement |
+
+Mouse Jiggler does not click. It does not guarantee that a particular service will show you as online or that the operating system will stay awake.
+
+## Quick start
+
+1. Download the package matching your platform.
+2. **Mac:** open the DMG, drag AutoTyperPro into Applications, eject the image, then open the installed app. **Windows:** run Setup, or extract the entire portable ZIP before launching.
+3. On macOS, grant the installed app keyboard/mouse control access when requested. See [permissions troubleshooting](docs/INSTALLATION.md#macos-permissions).
+4. Paste text, choose your settings and start typing. Switch to your target app during the countdown.
+5. Use the separate Mouse Jiggler tab for idle-triggered activity. Press **Escape** to stop.
+
+A short, skippable introduction appears on first launch and can be replayed from the application.
+
+## Privacy and control
+
+Text and input activity stay on your device. The application does not send them to a server. Typing and mouse activity start only when you choose to start them and stop when the application closes. The permission restart action uses a temporary local file to restore your current text/settings and deletes its owned file after restoration.
+
+## Run from source
+
+Requires Python 3.11+ with Tk support. Packaged downloads include their runtime; Python is only needed for source development.
 
 ```bash
-./run_mac.command
+git clone https://github.com/hamitcf1/AutoTyperPro.git
+cd AutoTyperPro
+python -m venv .venv
 ```
 
-Python 3.11 veya üstü, Tk desteği ve macOS gerekir. Bu sürüm Apple Silicon üzerinde Python 3.14 ile geliştirilmiştir. İlk kaynak çalıştırma bir `.venv` oluşturur; başlatıcı her çalıştırmada bağımlılıkları kontrol edip eksikleri yükler.
+**macOS:** `./run_mac.command` installs dependencies and launches the app. **Windows:** run the following in PowerShell:
 
-## Erişilebilirlik izni
-
-Klavye ve fare olaylarını gönderebilmek için **Sistem Ayarları → Gizlilik ve Güvenlik → Erişilebilirlik** bölümünde AutoTyperPro’yu etkinleştir. Kaynaktan çalıştırırken Python veya başlatan terminal uygulamasının izni gerekebilir. Uygulamanın izin çubuğu ilgili ayarları açar. İzin durumu otomatik yenilenir. İzin açık olduğu halde uyarı sürüyorsa **Yeniden başlat** düğmesini kullan; metin ve ayarlar geçici yerel dosya üzerinden korunup yeni işlemde geri yüklenir. Dosya geri yükleme sonrası silinir. Birden fazla kopya varsa kurulu kopyayı aç. Eski unsigned sürümün kaydı hâlâ tanınıyorsa eski izin kaydını kaldırıp yeni kurulu uygulamayı eklemek gerekebilir. Yeni macOS sürümlerinde izin bölümünün adı **Aygıt Denetimi ve Veri Erişimi** olabilir. Yönetici/root olarak çalıştırma gerekmez.
-
-Dağıtım paketi yerel olarak imzalanır; Apple Developer sertifikasıyla imzalanmış veya notarize edilmiş bir sürüm değildir. Başka Mac’lerde Gatekeeper tarafından ek kullanıcı onayı istenebilir.
-
-## Auto Typer
-
-1. Metnini yaz veya yapıştır.
-2. Hız seç: çok hızlı (30 ms), hızlı (60 ms), dengeli (100 ms), yavaş (150 ms), çok yavaş (250 ms) veya rastgele (10–5000 ms).
-3. Başlangıç beklemesini (0–60 saniye), doğal yazmayı, kelime arası beklemeyi ve satır davranışını ayarla.
-4. **Yazmaya başla** düğmesine bas; geri sayım sırasında hedef uygulamaya geç.
-5. ESC ile durdur. ESC her iki aracı da durdurur.
-
-Satır sonları boşluğa çevrilebilir, Shift+Enter olarak gönderilebilir veya atlanabilir. Türkçe ve diğer Unicode karakterleri macOS’un yerel olaylarıyla gönderilir. Hedef uygulamanın Unicode girişini ve seçtiğin satır davranışını desteklemesi gerekir. İlerleme ve tahmini süre yazma boyunca güncellenir. Tahmin, hedef uygulamanın kendi gecikmesini kapsamaz.
-
-## Mouse Jiggler
-
-Ayrı sekmeden **Jiggler’ı başlat** düğmesine bas. Varsayılan olarak 60 saniye giriş yapılmadığında yaklaşık 1 noktalık hareket yapıp 80 ms sonra imleci yerine getirir. Hareketler arasında en az 30 saniye bekler. İki süre de 5–3600 saniye aralığında ayarlanabilir. macOS sentetik olayları da boşta süre hesabına dahil edebilir; sonraki hareket için hem eşik hem aralık sağlanmalıdır.
-
-- Tıklama yapmaz, açılışta kendiliğinden başlamaz.
-- Yazma etkinliğinde bekler; sekme değiştirilince çalışmaya devam eder.
-- Kullanıcı hareket sırasında fareyi taşırsa imleci eski konuma zorlamaz.
-- F18 tuş etkinliği isteğe bağlıdır ve varsayılan olarak kapalıdır; bazı uygulamalarda kısayol tetikleyebilir.
-- Durdur, ESC veya uygulamayı kapatma etkinliği bitirir.
-- İşletim sisteminin uyku veya başka uygulamaların durum davranışını garanti etmez.
-
-## Test ve paketleme
-
-```bash
-.venv/bin/python -m unittest discover -s tests -v
-./make_executable_mac.sh
+```powershell
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python auto_typer.py
 ```
 
-Paket çıktısı `dist/AutoTyperPro.app` olur. Sesler ve CustomTkinter kaynakları pakete dahil edilir. Sanal ortam ve paket çıktıları Git’e eklenmez. `requirements-lock.txt`, bu Mac’te doğrulanan bağımlılık sürümlerini kaydeder; macOS’a özgü PyObjC paketleri içerir. Diğer platformlarda `requirements.txt` kullan.
+Source execution may require permission for Python or the launching terminal rather than the packaged application.
 
-Mouse Jiggler macOS ve Windows’ta çalışır. Windows paketleri Windows runner üzerinde derlenir; installer kurulumu, paket açılışı ve kaldırma işlemi CI’da kontrol edilir. Mac arm64 ve Intel paketleri ilgili macOS runner’larında üretilir. İmzalama/notarizasyon sertifikası yoktur; Gatekeeper/SmartScreen kullanıcı onayı isteyebilir.
+## Development
 
-DMG oluşturma: `python -m pip install ds-store mac-alias` ve `.venv/bin/python packaging/macos/build_dmg.py`. Windows installer: Inno Setup 6 ile `packaging/windows/installer.iss`. GitHub Actions **Release installers** akışı üç platform başarılı olunca release dosyalarını yayınlar.
+See [Contributing](CONTRIBUTING.md) for tests, native input verification and build commands. Build sources for the macOS DMG and Windows installer are kept in `packaging/`; generated binaries and virtual environments are excluded from Git.
+
+Found a problem? [Report a bug](https://github.com/hamitcf1/AutoTyperPro/issues/new?template=bug_report.yml) with the application version, OS, installation method and reproduction steps. Please remove private text and identifying details from logs or screenshots.

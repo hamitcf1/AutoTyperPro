@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible application or installation problem
+title: "[Bug]: "
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Application version
+      placeholder: "2.1.0, or source commit"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: OS and processor
+      placeholder: "macOS version / Apple Silicon or Intel; Windows version / x64"
+    validations:
+      required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation method
+      options:
+        - macOS DMG
+        - Windows Setup
+        - Windows portable ZIP
+        - Source
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps, expected behavior and actual behavior
+      description: Include permission state for input problems. Remove private text and identifying information from logs and screenshots.
+    validations:
+      required: true
