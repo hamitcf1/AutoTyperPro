@@ -173,8 +173,59 @@ class MacBackend(KeyChordMixin):
         finally:
             self.release(event)
 
+    def prepare_typing(self):
+        from keyboard_layout import current_keymap
+        try:self._keyboard_layout=current_keymap()
+        except Exception:self._keyboard_layout=None
+
+    def frontmost_process(self):
+        from remote_focus import frontmost_process
+        return frontmost_process()
+
+    def begin_typing(self,text,config,stop):
+        from remote_focus import is_remote_client
+        target=self.frontmost_process()
+        if target is None:raise RuntimeError(tr('typing.unknown_focus'))
+        self._typing_remote=bool(target and is_remote_client(target[1]))
+        self._typing_target=target;self._typing_cancel=stop
+        if self._typing_remote:
+            mapping=getattr(self,'_keyboard_layout',None)
+            if not mapping:raise ValueError(tr('typing.remote_layout'))
+            required=config.transformed(text).replace('\n','')
+            missing=next((char for char in required if char not in mapping),None)
+            if missing is not None:raise ValueError(tr('typing.remote_character',code=f'U+{ord(missing):04X}'))
+
+    def end_typing(self):
+        try:
+            if getattr(self,'_typing_remote',False):self.release_held_inputs()
+        finally:
+            self._typing_remote=False;self._typing_target=None;self._typing_cancel=None
+
+    def _remote_ready(self):
+        if self._typing_cancel.is_set():return False
+        if self.frontmost_process()!=self._typing_target:raise RuntimeError(tr('typing.remote_focus'))
+        return True
+
+    def _write_remote(self,text):
+        with self.lock:
+            for char in text:
+                for code,modifiers in self._keyboard_layout[char]:
+                    if not self._remote_ready():return
+                    held=[]
+                    try:
+                        for modifier in modifiers:
+                            held.append(modifier);self.physical_key_event(modifier,True)
+                        held.append(code);self.physical_key_event(code,True)
+                    finally:
+                        failure=None
+                        for key in reversed(held):
+                            try:self.physical_key_event(key,False)
+                            except Exception as exc:failure=exc
+                        if failure:raise failure
+
     def write(self, text):
         self.require_permission()
+        if getattr(self,'_typing_remote',False):return self._write_remote(text)
         data = text.encode('utf-16-le')
         units = (C.c_uint16 * (len(data) // 2)).from_buffer_copy(data)
         with self.lock:
@@ -193,6 +244,9 @@ class MacBackend(KeyChordMixin):
         finally:self.physical_key_event(code,False)
 
     def newline(self):
+        if getattr(self,'_typing_remote',False):
+            if self._remote_ready():self.key_chord('enter',('shift',),self._typing_cancel)
+            return
         self.press(36, 1 << 17)
 
     def position(self):

@@ -529,6 +529,7 @@ class AutoTyper:
             return
         if not self.ensure_permission():
             return
+        if hasattr(self.backend,'prepare_typing'):self.backend.prepare_typing()
         self.active_text = text
         self.active_config = config
         self.total = len(text)

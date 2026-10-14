@@ -23,13 +23,17 @@ def send():
     try:
         front=NSWorkspace.sharedWorkspace().frontmostApplication()
         if front.processIdentifier()!=os.getpid(): raise RuntimeError(f'Test window is not foreground (self={os.getpid()}, front={front.processIdentifier()}, app={front.localizedName()}); aborting input')
+        def check_focus():
+            if NSWorkspace.sharedWorkspace().frontmostApplication().processIdentifier()!=os.getpid():raise RuntimeError('Native test lost focus; input stopped')
         for char in 'İıŞşĞğÜüÖöÇç 🙂':
+            check_focus()
             backend.write(char); time.sleep(.05)
-        backend.newline(); time.sleep(.1)
+        check_focus(); backend.newline(); time.sleep(.1)
         for char in 'ikinci satır':
+            check_focus()
             backend.write(char); time.sleep(.05)
-        backend.press(53)
-        before=backend.position(); backend.micro_activity(False,threading.Event()); time.sleep(.15); after=backend.position()
+        check_focus(); backend.press(53)
+        check_focus(); before=backend.position(); backend.micro_activity(False,threading.Event()); time.sleep(.15); after=backend.position()
         if abs(before.x-after.x)>.5 or abs(before.y-after.y)>.5: raise RuntimeError('Cursor did not return (or user moved it)')
         results.put(None)
     except Exception as exc: results.put(exc)

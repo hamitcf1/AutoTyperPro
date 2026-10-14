@@ -228,5 +228,9 @@
   "macro.badge_playing": "● Makro etkin",
   "macro.no_events": "Etkinlik kaydedilmedi. Durdurmadan önce bir hareket kaydedin.",
   "typing.invalid_types": "Yazma ayarlarında tam sayı bekleme süreleri ve geçerli ritim seçenekleri kullanın.",
-  "macro.library_errors": "{count} kayıt dosyası okunamadı. Dosyalar korundu; geçerli kayıtlar kullanılabilir."
+  "macro.library_errors": "{count} kayıt dosyası okunamadı. Dosyalar korundu; geçerli kayıtlar kullanılabilir.",
+  "typing.remote_layout": "Uzak yazma için fiziksel klavye düzeni okunamadı. Standart bir klavye giriş kaynağı seçip tekrar dene.",
+  "typing.remote_character": "Etkin klavye düzeni uzak yazma için {code} karakterini üretemiyor. Metin gönderilmedi. Uygun klavye düzenini veya Screen Sharing pano yapıştırmasını kullan.",
+  "typing.remote_focus": "Uzak bağlantı odağı kaybettiği için yazma durduruldu.",
+  "typing.unknown_focus": "Odaktaki uygulama belirlenemedi. Hiçbir metin gönderilmedi. Hedef pencereye odaklanıp tekrar deneyin."
 }

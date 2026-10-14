@@ -228,5 +228,9 @@
   "macro.badge_playing": "● Macro active",
   "macro.no_events": "No events were captured. Record a movement before stopping.",
   "typing.invalid_types": "Typing settings must use valid integer delays and boolean rhythm options.",
-  "macro.library_errors": "{count} saved macro files could not be read. They were preserved; valid recordings remain available."
+  "macro.library_errors": "{count} saved macro files could not be read. They were preserved; valid recordings remain available.",
+  "typing.remote_layout": "Remote typing could not read the physical keyboard layout. Select a standard keyboard input source and try again.",
+  "typing.remote_character": "Remote typing cannot generate {code} with the active keyboard layout. No text was sent. Use a matching keyboard layout or Screen Sharing clipboard paste for this text.",
+  "typing.remote_focus": "Remote typing stopped because the remote connection lost focus.",
+  "typing.unknown_focus": "The focused application could not be identified. No text was sent. Focus the target window and try again."
 }
