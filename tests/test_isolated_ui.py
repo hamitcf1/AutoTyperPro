@@ -48,3 +48,9 @@ class IsolationTests(unittest.TestCase):
         def fail(private):raise RuntimeError('original test failure')
         with self.assertRaisesRegex(RuntimeError,'original test failure') as result:isolated(api,fail)
         self.assertIn('cleanup failed',result.exception.__notes__[0])
+    def test_direct_test_function_refuses_visible_mac_ui(self):
+        from tools.windows_isolated_ui import run_test
+        from unittest.mock import patch
+        with patch('sys.platform','darwin'),patch('runpy.run_path') as run:
+            with self.assertRaises(RuntimeError):run_test('ui')
+            run.assert_not_called()

@@ -92,6 +92,9 @@ class WindowsDesktopAPI:
                 self.close_handle(process.hThread);self.close_handle(process.hProcess)
 
 def run_test(test):
+    import os
+    if sys.platform!='win32':raise RuntimeError('UI tests require the invisible Windows test desktop')
+    validate_child(WindowsDesktopAPI(),os.environ.get('AUTOTYPER_TEST_DESKTOP'))
     # Imports and all Tk creation happen AFTER this thread is isolated.
     import runpy
     from unittest.mock import patch
@@ -99,7 +102,7 @@ def run_test(test):
     from tools.ui_fakes import FakeBackend,FakeDesktop
     import auto_typer
     def forbidden(*args,**kwargs):raise RuntimeError('External UI is forbidden in isolated tests')
-    with patch('auto_typer.create_backend',FakeBackend),patch('platform_backend.create_backend',FakeBackend),patch('auto_typer.play_sound'),patch('platform_backend.play_sound'),patch('desktop_integration.create_driver',lambda *args:FakeDesktop()),patch('webbrowser.open',forbidden):
+    with patch('auto_typer.create_backend',FakeBackend),patch('platform_backend.create_backend',FakeBackend),patch('auto_typer.play_sound'),patch('platform_backend.play_sound'),patch('desktop_integration.create_driver',lambda *args:FakeDesktop()),patch('webbrowser.open',forbidden),patch('tkinter.Misc.clipboard_clear',forbidden),patch('tkinter.Misc.clipboard_append',forbidden):
         scripts={'ui':'ui_smoke.py','entrypoint':'entrypoint_ui_smoke.py','compact':'compact_ui_smoke.py'}
         runpy.run_path(str(root/'tools'/scripts[test]),run_name='__main__')
 
