@@ -15,6 +15,7 @@ import customtkinter as ctk
 from PIL import Image
 from preferences import Preferences, VERSION, resource
 from onboarding import Introduction
+from support_ui import show_support
 from engine import TypingConfig, JigglerConfig, type_text, jiggle
 from platform_backend import create_backend, open_permissions, play_sound
 BG = '#141816'
@@ -378,7 +379,8 @@ class AutoTyper:
         self.appearance_menu.set(tr('settings.'+self.preferences.load()['appearance']))
         self.appearance_menu.pack(anchor='w',padx=24)
         self.switch(panel,tr('settings.sound'),self.sound,lambda:self.preferences.update({'sound':self.sound.get()})).pack(anchor='w',padx=24,pady=24)
-        self.button(panel,tr('settings.title')+' ↗',self.permission_action).pack(anchor='w',padx=24,pady=(0,24))
+        self.button(panel,tr('settings.title')+' ↗',self.permission_action).pack(anchor='w',padx=24,pady=(0,12))
+        self.button(panel,tr('support.about'),lambda:show_support(self)).pack(anchor='w',padx=24,pady=(0,24))
 
     def change_preferences(self, **values):
         if self.typing_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()) or self.macro_active.is_set() or self.intro:

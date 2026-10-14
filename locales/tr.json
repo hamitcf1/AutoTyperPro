@@ -228,5 +228,21 @@
   "macro.badge_playing": "● Makro etkin",
   "macro.no_events": "Etkinlik kaydedilmedi. Durdurmadan önce bir hareket kaydedin.",
   "typing.invalid_types": "Yazma ayarlarında tam sayı bekleme süreleri ve geçerli ritim seçenekleri kullanın.",
-  "macro.library_errors": "{count} kayıt dosyası okunamadı. Dosyalar korundu; geçerli kayıtlar kullanılabilir."
+  "macro.library_errors": "{count} kayıt dosyası okunamadı. Dosyalar korundu; geçerli kayıtlar kullanılabilir.",
+  "support.about": "Hakkında ve destek",
+  "support.report": "Hata bildir",
+  "support.privacy": "GitHub’ı açmadan önce teknik özeti gözden geçir ve düzenle. Rapor otomatik gönderilmez. Eklediğin özel bilgileri kaldır.",
+  "support.open_report": "GitHub raporunu aç ↗",
+  "support.copy": "Teknik bilgileri kopyala",
+  "support.copied": "Teknik bilgiler kopyalandı.",
+  "support.browser_error": "Tarayıcı açılamadı. GitHub proje sayfasını ziyaret et.",
+  "support.version": "Sürüm {version}",
+  "support.description": "Otomatik yazma, Anti-AFK ve yerel makrolar için masaüstü araçları. AetheriusCo tarafından geliştirildi.",
+  "support.creator": "Geliştirici profili",
+  "support.organization": "AetheriusCo",
+  "support.project": "Proje ve kaynak kod",
+  "support.releases": "İndirmeler ve sürümler",
+  "support.translate": "Çeviriye katkı yap",
+  "support.credits": "Çeviri katkıcıları",
+  "support.community": "Topluluk"
 }

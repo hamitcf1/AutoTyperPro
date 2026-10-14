@@ -228,5 +228,21 @@
   "macro.badge_playing": "● Macro active",
   "macro.no_events": "No events were captured. Record a movement before stopping.",
   "typing.invalid_types": "Typing settings must use valid integer delays and boolean rhythm options.",
-  "macro.library_errors": "{count} saved macro files could not be read. They were preserved; valid recordings remain available."
+  "macro.library_errors": "{count} saved macro files could not be read. They were preserved; valid recordings remain available.",
+  "support.about": "About & support",
+  "support.report": "Report a bug",
+  "support.privacy": "Review and edit this technical summary before opening GitHub. No report is submitted automatically. Remove any private information you add.",
+  "support.open_report": "Open GitHub report ↗",
+  "support.copy": "Copy technical details",
+  "support.copied": "Technical details copied.",
+  "support.browser_error": "Could not open the browser. Visit the project on GitHub.",
+  "support.version": "Version {version}",
+  "support.description": "Desktop tools for automatic typing, Anti-AFK and local macros. Built by AetheriusCo.",
+  "support.creator": "Developer profile",
+  "support.organization": "AetheriusCo",
+  "support.project": "Project & source",
+  "support.releases": "Downloads & releases",
+  "support.translate": "Help translate this app",
+  "support.credits": "Translation contributors",
+  "support.community": "Community"
 }
