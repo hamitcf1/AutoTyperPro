@@ -41,7 +41,17 @@ class RegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base=Path(directory);root=base/'locales';root.mkdir();self.fixture(root)
             private=base/'private.json';private.write_text('{"hello":"Private {name}"}')
-            (root/'es.json').unlink();(root/'es.json').symlink_to(private)
+            (root/'es.json').unlink()
+            try:(root/'es.json').symlink_to(private)
+            except OSError as error:
+                if getattr(error,'winerror',None)!=1314:raise
+                # A standard Windows account may not create links. Still test
+                # rejection before content reads; no elevated access is needed.
+                from unittest.mock import patch
+                (root/'es.json').write_text(private.read_text())
+                with patch.object(Path,'is_symlink',autospec=True,side_effect=lambda item:item==root/'es.json'):
+                    self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+                return
             self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
     def test_incompatible_format_specifier_uses_default(self):
         with tempfile.TemporaryDirectory() as directory:
