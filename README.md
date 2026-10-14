@@ -5,7 +5,7 @@
 
 ![AutoTyper Pro overview](docs/assets/overview.svg)
 
-AutoTyper Pro is a local desktop utility for repetitive typing and small, idle-triggered mouse movements. Paste your text, choose a rhythm, and switch to the target application during the countdown. Start Mouse Jiggler independently when you need it. **Escape stops both tools.**
+AutoTyper Pro is a local desktop utility for repetitive typing and small, idle-triggered mouse movements. Paste your text, choose a rhythm, and switch to the target application during the countdown. Start Mouse Jiggler independently when you need it. Record selected actions as local macros when you need repeatable sequences. **Escape stops all activity.**
 
 No account. No telemetry. No automatic activity on launch.
 
@@ -13,17 +13,17 @@ No account. No telemetry. No automatic activity on launch.
 
 | Platform | Recommended download | Alternative |
 | --- | --- | --- |
-| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-macos-arm64.dmg) | M-series Macs |
-| macOS — Intel | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-macos-x64.dmg) | Intel Macs |
-| Windows — x64 | [Setup installer](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/hamitcf1/AutoTyperPro/releases/download/v2.1.0/AutoTyperPro-2.1.0-windows-x64-portable.zip) |
+| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-macos-arm64.dmg) | M-series Macs |
+| macOS — Intel | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-macos-x64.dmg) | Intel Macs |
+| Windows — x64 | [Setup installer](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-portable.zip) |
 
 [All releases, SHA-256 checksums and build verification](https://github.com/hamitcf1/AutoTyperPro/releases/latest)
 
-**Release status:** source version **3.0.0** includes an English-first interface, Turkish language selection, saved profiles and macro recording. Published installers are still **2.1.0** with a Turkish interface; they do not include the latest permission/ESC fixes. A fresh Windows build is required before the 3.0 installer release can be published. On macOS 27, use the current source version if 2.1 crashes when starting input monitoring.
+**Current release: 3.0.0.** English-first interface, optional Turkish, saved profiles and local macro recording. macOS Apple Silicon/Intel and Windows x64 packages are built from the same source commit and include build verification and SHA-256 checksums.
 
 Packages are not Developer ID notarized or Windows Authenticode signed. See the [installation guide](docs/INSTALLATION.md) before opening them.
 
-## In the 3.0 source version
+## Features
 
 | Auto Typer | Mouse Jiggler / Anti-AFK |
 | --- | --- |
@@ -44,7 +44,7 @@ Mouse Jiggler does not click. It does not guarantee that a particular service wi
 
 ## A look inside
 
-Real screenshots of the English 3.0 source interface:
+The English 3.0 interface:
 
 ![Auto Typer interface](docs/assets/auto-typer.jpg)
 

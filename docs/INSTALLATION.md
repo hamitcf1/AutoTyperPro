@@ -13,12 +13,12 @@ Enable the installed application under **System Settings → Privacy & Security 
 If permission appears enabled but the app still reports denial:
 
 1. Check that you are opening the same installed copy that you granted access to.
-2. Stop any active tools and use the application's Restart action (`Yeniden başlat` in version 2.1). It preserves the current editor text and settings.
+2. Stop any active tools and use the application's Restart action. It preserves the current editor text and settings.
 3. If a previous build is still registered, remove only its AutoTyperPro entry and add the current installed copy, then relaunch.
 
 Ad-hoc signed builds have different code identities after rebuilding. An earlier grant may not apply to the replacement. The application always checks the operating system's actual result; an enabled switch for another copy is insufficient.
 
-The 3.0 source version explicitly requests permission from the running process when you click Settings and replaces the macOS ESC listener to avoid a background keyboard-layout crash on macOS 27. These changes are not in the 2.1.0 release assets. Source version 3.0 also adds English/Turkish language settings, Anti-AFK profiles and macros. Use the source version if you encounter that crash while a replacement release is being prepared.
+Version 3.0 explicitly requests permission from the running process when you choose the permission action. Its native macOS ESC listener avoids the background keyboard-layout query that caused crashes on macOS 27. If you are using 2.1.0, install the current release to receive these fixes.
 
 ## Windows
 
@@ -31,14 +31,14 @@ Packages target x64 Windows 10/11. They are not Authenticode signed, so SmartScr
 Download the matching SHA256SUMS file from the same release. Compare the hash for the exact filename:
 
 ```bash
-shasum -a 256 AutoTyperPro-2.1.0-macos-arm64.dmg
+shasum -a 256 AutoTyperPro-3.0.0-macos-arm64.dmg
 ```
 
 ```powershell
-Get-FileHash .\AutoTyperPro-2.1.0-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\AutoTyperPro-3.0.0-windows-x64-setup.exe -Algorithm SHA256
 ```
 
-A checksum detects a corrupted or mismatched download; it is not a substitute for publisher signing. Build verification is included in the release's `BUILD-VERIFICATION.json`.
+A checksum detects a corrupted or mismatched download; it is not a substitute for publisher signing. Build verification is included in the release's `BUILD-VERIFICATION-macos.json` and `BUILD-VERIFICATION-windows.json` files.
 
 ## Report a problem
 
