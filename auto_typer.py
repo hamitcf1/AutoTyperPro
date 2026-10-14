@@ -682,7 +682,7 @@ class AutoTyper:
                 self.jig_stop_btn.configure(state='disabled')
                 self.activity_page.set_busy(False)
                 self.tell(value if kind == 'jiggler_error' else tr('ui.8b10cdb83c0e'), kind == 'jiggler_error')
-                if kind=='jiggler_error':self.system_notification('error')
+                if kind=='jiggler_error':self.system_notification('activity_error')
         jig_active = bool(self.jiggler_thread and self.jiggler_thread.is_alive())
         typing = self.typing_active.is_set()
         self.activity_badge.configure(text=tr('ui.7c052300f26d') if typing and jig_active else tr('ui.2a4a5f6abd9b') if typing else tr('ui.80c610056213') if jig_active else tr('ui.4106acbcd32a'))
@@ -701,7 +701,9 @@ class AutoTyper:
         if not self.closing:self.root.after(100, self.poll)
 
     def system_notification(self,kind):
-        keys={'finished':'notification.finished','error':'notification.error','macro_finished':'notification.macro_finished','record_finished':'notification.record_finished'}
+        sounds={'macro_finished':'finish','record_finished':'finish','macro_error':'stop','activity_error':'stop'}
+        if kind in sounds:self.sound_event(sounds[kind])
+        keys={'finished':'notification.finished','error':'notification.error','macro_finished':'notification.macro_finished','record_finished':'notification.record_finished','macro_error':'notification.error','activity_error':'notification.error'}
         if kind in keys and self.preferences.load()['notifications']:
             self.desktop.notify(tr('notification.title'),tr(keys[kind]))
 

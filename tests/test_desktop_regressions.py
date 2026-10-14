@@ -59,3 +59,13 @@ class HeadlessDesktopRegressions(unittest.TestCase):
         app.reveal.assert_called_once()
         self.assertFalse(app.desktop.notifications_enabled)
         app.notifications.set.assert_called_once_with(False)
+    def test_macro_sound_is_independent_of_os_notifications(self):
+        app=SimpleNamespace(preferences=Mock(),desktop=Mock(),sound_event=Mock())
+        app.preferences.load.return_value={'notifications':False}
+        AutoTyper.system_notification(app,'macro_finished')
+        app.sound_event.assert_called_once_with('finish');app.desktop.notify.assert_not_called()
+    def test_typing_notification_does_not_duplicate_existing_completion_sound(self):
+        app=SimpleNamespace(preferences=Mock(),desktop=Mock(),sound_event=Mock())
+        app.preferences.load.return_value={'notifications':False}
+        AutoTyper.system_notification(app,'finished')
+        app.sound_event.assert_not_called()

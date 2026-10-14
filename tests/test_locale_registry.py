@@ -67,3 +67,7 @@ class RegistryTests(unittest.TestCase):
             self.assertEqual(len({label for code,label in options}),3)
             self.assertEqual(dict(options)['en'],'English')
             self.assertEqual(dict(options)['es-MX'],'Español (es-MX)')
+    def test_link_rejection_still_checked_without_windows_link_privilege(self):
+        from unittest.mock import patch
+        error=OSError('Link privilege unavailable');error.winerror=1314
+        with patch.object(Path,'symlink_to',side_effect=error):self.test_symlinked_catalog_does_not_read_outside_locale_directory()
