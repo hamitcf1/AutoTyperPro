@@ -7,6 +7,8 @@ Created by [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](ht
 ### What is new
 
 - Native macOS menu-bar utility and Windows system-tray actions for opening tools, controlling Anti-AFK, stopping all activity and quitting.
+- Branded monochrome macOS menu-bar icon that follows the system appearance.
+- Command+Return and Control+Return start the selected tool without changing editor text.
 - Windows taskbar identity and application icon; optional system notifications for completion and actionable errors.
 - Optional background operation when the window closes. Disabled by default; hiding never starts activity, and Quit stops all tools.
 - About/support area with creator and organization links, translation credits and a user-reviewed bug report summary. Reports are submitted by the user on GitHub.
@@ -35,5 +37,3 @@ Includes the 3.0.1 physical-key fix for macOS Screen Sharing. Use matching keybo
 - Smaller window minimum, adaptive scaling and navigation that moves to a separate row in compact windows.
 - Short cancellable introduction transitions with a reduced-motion option.
 - Less repetitive product branding; existing named typing, Anti-AFK and macro profiles remain available.
-
-Background-only development checks do not validate the new compact window visually. Final native and packaged interactive checks are required before publishing.
