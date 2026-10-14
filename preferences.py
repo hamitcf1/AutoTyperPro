@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-VERSION = '3.0.0'
+VERSION = '3.1.0'
 
 
 def resource(name):

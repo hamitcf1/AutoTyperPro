@@ -1,36 +1,25 @@
-## AutoTyper Pro 3.0.0
+## AutoTyper Pro 3.1.0
 
-Desktop tools for typing, Mouse Jiggler / Anti-AFK and explicit local macro recording.
+Desktop quick access, community translations and visible product ownership.
 
 Created by [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](https://github.com/AetheriusCo).
 
 ### What is new
 
-- Language selection, persistent dark/light/system appearance and notification preferences.
-- Recommended Gentle, Balanced and Keyboard-only presets; adjustable activity distance, direction, duration and keyboard shortcuts.
-- Saved typing and activity profiles with rename, duplication and validated JSON import/export.
-- Independent mouse movement, click, physical-key and scroll capture; local macro library and path preview.
-- Playback speed, start delay, repeat count, pause between repeats and explicit display remapping.
-- Persistent Stop / Escape controls, mutually exclusive typing/recording/playback and Anti-AFK yielding.
-- Native macOS event monitoring avoids background keyboard-layout queries that crash on macOS 27.
-- Explicit permission requests from the running app; restart preserves editor text and settings.
+- Native macOS menu-bar utility and Windows system-tray actions for opening tools, controlling Anti-AFK, stopping all activity and quitting.
+- Windows taskbar identity and application icon; optional system notifications for completion and actionable errors.
+- Optional background operation when the window closes. Disabled by default; hiding never starts activity, and Quit stops all tools.
+- About/support area with creator and organization links, translation credits and a user-reviewed bug report summary. Reports are submitted by the user on GitHub.
+- Reviewed locale registry with partial-translation fallback, duplicate/placeholder validation, contribution guide and translation issue form.
+- Refined neutral surfaces, floating rounded navigation, compact preference groups and reduced-motion introduction. Native menus follow the OS appearance; the Tk window does not use Apple's native Liquid Glass material.
+- Consistent light theme across tool pages and the introduction; safe cleanup of native status items and late notification callbacks.
 
-### Installation
+### Install
 
-Mac: choose arm64 for Apple Silicon or x64 for Intel, open the DMG, drag the app into Applications, eject the image and open the installed copy. Enable the current app under Privacy & Security → Accessibility / Device Control and Data Access. Earlier ad-hoc permission records may not cover a replacement build.
+Mac: choose arm64 for Apple Silicon or x64 for Intel, open the DMG, drag into Applications, eject the image and open the installed app. Enable the current app's input permission in Privacy & Security. Ad-hoc replacement builds may require a renewed grant.
 
-Windows: use the per-user Setup installer or extract the complete portable ZIP. No activity starts automatically. Input into elevated applications may require matching privileges.
+Windows: use Setup or extract the complete portable ZIP. The notification-area icon may initially be in Windows' hidden-icons area.
 
-Keyboard recording can contain sensitive input. Capture categories are individually selectable and movement-only recording is selected initially. Macros and profiles stay local. Physical-key recordings can only be replayed on their recording OS and depend on keyboard layout; preview display mapping before playback.
+Enable system notifications and background operation separately in Settings. Notification permissions depend on the OS; denial does not prevent automation. Editor text and recorded input are never included in notifications or the generated technical summary.
 
-Packages are not Developer ID notarized or Authenticode signed. Checksums and actual platform build verification accompany published assets. The 3.0 release is published only after fresh packages and required platform checks succeed.
-
-### Build verification
-
-All four installers/archives use source commit `0eb3ccf254d5f1d476547bfda8a2ce1b5c6d681c`.
-
-- macOS Apple Silicon: local build, 65 unit tests, UI smoke, native Unicode/Escape/mouse and macro capture/replay checks; packaged launch and DMG integrity verified.
-- macOS Intel: built and launch-tested under Rosetta; 65 unit tests, UI smoke, bundle metadata/signature and DMG integrity verified. A physical Intel Mac was not used.
-- Windows x64: local Python 3.13 build, 65 unit tests, UI/native input/macro checks; installer installation, packaged launch, uninstall and portable extraction/launch verified. Full native/UI checks ran against source; packaged checks cover launch.
-
-See `BUILD-VERIFICATION-macos.json`, `BUILD-VERIFICATION-windows.json` and the matching SHA256SUMS files for build details and artifact hashes. These packages were built locally; GitHub Actions was unavailable due to the account billing lock.
+Packages are not Developer ID notarized or Authenticode signed. Published assets include checksums and platform build-verification reports. Intel Mac packages are built and checked under Rosetta; no physical Intel Mac is used.
