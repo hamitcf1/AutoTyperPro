@@ -62,3 +62,11 @@ class WindowsMenuTests(unittest.TestCase):
         driver.icon=DummyIcon();driver.enqueue=lambda command:None
         driver.update('Idle',{'open':'Open'})
         self.assertEqual(driver.icon.rebuilds,1)
+    def test_windows_notification_does_not_add_an_uncontrolled_system_sound(self):
+        from desktop_windows import WindowsDesktop
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        driver=WindowsDesktop.__new__(WindowsDesktop);driver.icon=SimpleNamespace(_message=Mock(),notify=Mock())
+        driver.notify('Completed','Your task finished')
+        driver.icon._message.assert_called_once_with(1,0x10,szInfo='Your task finished',szInfoTitle='Completed',dwInfoFlags=0x10)
+        driver.icon.notify.assert_not_called()

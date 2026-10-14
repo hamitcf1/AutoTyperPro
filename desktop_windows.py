@@ -28,7 +28,11 @@ class WindowsDesktop:
             items.append(module.MenuItem(label,menu_action(command,self.enqueue),default=command=='open'))
         self.icon.menu=module.Menu(*items);self.icon.title='AutoTyper Pro · '+status
     def request_notifications(self,callback):callback(True)
-    def notify(self,title,message):self.icon.notify(message,title);return True
+    def notify(self,title,message):
+        # NIIF_NOSOUND: all sound/gain comes from our per-app audio settings.
+        # https://learn.microsoft.com/en-us/windows/win32/api/shellapi/ns-shellapi-notifyicondataw
+        self.icon._message(1,0x10,szInfo=message[:255],szInfoTitle=title[:63],dwInfoFlags=0x10)
+        return True
     def stop(self):
         with self.lock:
             self.closed.set();self.ready=False;self.icon.visible=False
