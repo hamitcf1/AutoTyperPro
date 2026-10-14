@@ -7,9 +7,9 @@ on:
         type: boolean
         default: false
       tag:
-        description: Release tag matching the application version
+        description: Optional tag matching the app version; leave blank to use it automatically
         type: string
-        default: v3.0.0
+        default: ''
   push:
     tags: ['v*']
     branches: [main]
@@ -105,5 +105,6 @@ jobs:
           RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
         run: |
           version=$(python3 -c 'from preferences import VERSION; print(VERSION)')
+          RELEASE_TAG="${RELEASE_TAG:-v$version}"
           python3 tools/verify_release.py --tag "$RELEASE_TAG"
           gh release create "$RELEASE_TAG" installers/* --target "$GITHUB_SHA" --title "AutoTyper Pro $RELEASE_TAG" --notes-file packaging/RELEASE_NOTES.md
