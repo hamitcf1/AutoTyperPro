@@ -45,8 +45,6 @@ class Introduction(ctk.CTkFrame):
         self.next.pack(side='right')
         self.permission = app.button(self.actions, tr('ui.89abb54abe71'), app.permission_action, width=144)
         self.render()
-        for index in (() if app.preferences.load()['reduced_motion'] else range(1, 7)):
-            app.root.after(index * 25, lambda i=index: self.panel.place_configure(rely=0.5 + 0.01 * (1 - i / 6) ** 3) if self.winfo_exists() else None)
 
     def render(self):
         steps = [(tr('ui.e1a345f10b2b'), tr('ui.1cff31c8bcd6'), tr('ui.e5f87cf79caa'), tr('ui.21efba887838')), ('02  /  MOUSE JIGGLER', tr('ui.5b87196fc8fd'), tr('ui.b8484c8f9490'), tr('ui.6dbddd0b7c39')), (tr('ui.04b0915c8230'), tr('ui.e5d20bc15f12'), tr('ui.dd2e64bfd76d'), '')]
@@ -66,6 +64,8 @@ class Introduction(ctk.CTkFrame):
         elif self.step == 2:
             detail = tr('ui.690bc12babeb')
         self.detail_text.configure(text=detail)
+        from motion import introduce
+        introduce(self.app.root,self.panel,self.app.preferences.load()['reduced_motion'])
 
     def advance(self):
         if self.step == 2:

@@ -274,5 +274,16 @@
   "notification.record_finished": "Makro kaydı gözden geçirilmeye hazır.",
   "desktop.general": "Genel",
   "desktop.utility": "Masaüstü yardımcı aracı",
-  "desktop.permissions": "Giriş izinleri"
+  "desktop.permissions": "Giriş izinleri",
+  "typing.title": "Kendi hızında yaz",
+  "settings.audio": "Ses ve görünüm",
+  "settings.sound_theme": "Bildirim sesi",
+  "settings.preview_sound": "Önizle",
+  "settings.sound_volume": "Ses düzeyi",
+  "settings.scale": "Arayüz boyutu",
+  "settings.autosaved": "Değişiklikler bu bilgisayarda otomatik kaydedilir.",
+  "settings.save": "Ayarları kaydet",
+  "sound.classic": "Klasik · önerilen",
+  "sound.soft": "Yumuşak",
+  "sound.glass": "Cam"
 }

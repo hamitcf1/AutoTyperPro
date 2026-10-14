@@ -11,11 +11,15 @@ class WindowsDesktop:
         import pystray
         from PIL import Image
         self.module=pystray;self.enqueue=enqueue;self.ready=False;self.closed=threading.Event()
+        self.lock=threading.RLock()
         with Image.open(icon_path) as image:icon=image.copy()
         self.icon=pystray.Icon('AutoTyperPro',icon,'AutoTyper Pro')
     def start(self):
         def setup(icon):
-            if not self.closed.is_set():icon.visible=True;self.ready=True
+            with self.lock:
+                closed=self.closed.is_set()
+                if not closed:icon.visible=True;self.ready=True
+            if closed:icon.stop()
         self.icon.run_detached(setup);return True
     def update(self,status,labels):
         module=self.module
@@ -26,7 +30,9 @@ class WindowsDesktop:
     def request_notifications(self,callback):callback(True)
     def notify(self,title,message):self.icon.notify(message,title);return True
     def stop(self):
-        self.closed.set();self.ready=False;self.icon.visible=False;self.icon.stop()
+        with self.lock:
+            self.closed.set();self.ready=False;self.icon.visible=False
+        self.icon.stop()
 
 def set_taskbar_identity():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('AetheriusCo.AutoTyperPro')

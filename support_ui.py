@@ -14,7 +14,10 @@ def copy_text(app,text):
     app.root.clipboard_clear();app.root.clipboard_append(text);app.tell(tr('support.copied'))
 
 def report_bug(app):
+    existing=getattr(app,'report_window',None)
+    if existing is not None and existing.winfo_exists():existing.lift();return existing
     window=ctk.CTkToplevel(app.root);window.title(tr('support.report'));window.geometry('600x430');window.minsize(520,400)
+    app.report_window=window
     window.configure(fg_color=app.root.cget('fg_color'));window.grid_columnconfigure(0,weight=1);window.grid_rowconfigure(2,weight=1)
     app.label(window,tr('support.report'),24,weight='bold').grid(row=0,column=0,sticky='w',padx=24,pady=(24,10))
     app.label(window,tr('support.privacy'),13,wraplength=530).grid(row=1,column=0,sticky='ew',padx=24,pady=8)

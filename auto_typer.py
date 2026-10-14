@@ -64,7 +64,7 @@ class AutoTyper:
         self.root = ctk.CTk(fg_color=BG)
         self.root.title(f'AutoTyper Pro {VERSION}')
         self.root.geometry('1120x800')
-        self.root.minsize(980, 740)
+        self.root.minsize(740, 540)
         self.root.protocol('WM_DELETE_WINDOW', self.request_close)
         self.backend = create_backend()
         self.intro = None
@@ -95,6 +95,8 @@ class AutoTyper:
         self.word_pauses = ctk.BooleanVar(value=False)
         self.sound = ctk.BooleanVar(value=prefs['sound'])
         self.setup_gui()
+        self.root.bind('<Configure>',self.responsive_layout,add='+')
+        self.root.after(0,self.responsive_layout)
         self.desktop_events=queue.Queue()
         self.desktop=DesktopIntegration(self.desktop_events,resource('assets/icon.png'))
         self.desktop.start()
@@ -107,8 +109,8 @@ class AutoTyper:
         if show_intro and (not self.preferences.intro_complete()):
             self.root.after(250, self.show_introduction)
 
-    def label(self, parent, text, size=14, color=INK, weight='normal', **kwargs):
-        return ctk.CTkLabel(parent, text=text, text_color=color, font=(FONT, size, weight), anchor='w', **kwargs)
+    def label(self, parent, text, size=14, color=None, weight='normal', **kwargs):
+        return ctk.CTkLabel(parent, text=text, text_color=INK if color is None else color, font=(FONT, size, weight), anchor='w', **kwargs)
 
     def button(self, parent, text, command, primary=False, **kwargs):
         return ctk.CTkButton(parent, text=text, command=command, height=kwargs.pop('height', 38), corner_radius=19, border_width=1, border_color=ACCENT if primary else LINE, font=(FONT, 13, 'bold' if primary else 'normal'), fg_color=ACCENT if primary else LINE, hover_color=HOVER if primary else '#435447', text_color=BG if primary else INK, text_color_disabled='#6C7B70', **kwargs)
@@ -135,11 +137,12 @@ class AutoTyper:
         ctk.CTkLabel(mark, text='', image=self.brand_icon).place(relx=0.5, rely=0.5, anchor='center')
         if sys.platform == 'win32':
             self.root.iconbitmap(str(resource('assets/icon.ico')))
-        self.label(header, 'AutoTyper', 20, weight='bold').grid(row=0, column=1, sticky='sw')
+        self.label(header, 'AutoTyper Pro', 20, weight='bold').grid(row=0, column=1, sticky='sw')
         self.label(header, 'PRO  /  DESKTOP TOOLS', 10, MUTED).grid(row=1, column=1, sticky='nw')
         self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', tr('nav.activity'), tr('nav.macros'), tr('settings.title')], command=self.show_page, height=42, corner_radius=21, font=(FONT, 13), fg_color=PANEL, selected_color=LINE, selected_hover_color='#435447', unselected_color=PANEL, unselected_hover_color=LINE, text_color=INK, dynamic_resizing=False, width=410)
         self.nav.set('Auto Typer')
         self.nav.grid(row=0, column=2, rowspan=2, padx=14)
+        self.header=header
         self.activity_badge = self.label(header, tr('ui.4106acbcd32a'), 12, ACCENT)
         self.activity_badge.grid(row=0, column=3, rowspan=2)
         self.permission_bar = ctk.CTkFrame(self.root, fg_color='#332B23', corner_radius=10)
@@ -192,7 +195,7 @@ class AutoTyper:
         page.grid_columnconfigure(0, weight=1)
         page.grid_columnconfigure(1, minsize=300)
         page.grid_rowconfigure(1, weight=1)
-        self.page_title(page, '01  /  AUTO TYPER', tr('ui.2cc3683090bf'), tr('ui.806aa52cde5b'))
+        self.page_title(page, '01  /  TEXT', tr('typing.title'), tr('ui.806aa52cde5b'))
         editor = ctk.CTkFrame(page, fg_color=PANEL, corner_radius=16)
         editor.grid(row=1, column=0, sticky='nsew', padx=(0, 18))
         editor.grid_columnconfigure(0, weight=1)
@@ -309,6 +312,29 @@ class AutoTyper:
         for page in (self.typer_page,self.jiggler_page,self.macros_page,self.settings_page): page.grid_remove()
         pages[value].grid(row=0,column=0,sticky='nsew')
 
+    def responsive_layout(self,event=None):
+        if self.closing or (event is not None and event.widget is not self.root):return
+        from responsive import fit_scale
+        width=self.root.winfo_width();height=self.root.winfo_height()
+        if width<100 or height<100:return
+        scale=fit_scale(width,height,self.preferences.load()['ui_scale'])
+        if abs(scale-getattr(self,'_layout_scale',0))>.015:
+            self._layout_scale=scale;ctk.set_widget_scaling(scale)
+        narrow=width<980
+        self.nav.grid_configure(row=2 if narrow else 0,column=0 if narrow else 2,columnspan=4 if narrow else 1,rowspan=1 if narrow else 2,pady=(12,0) if narrow else 0)
+        self.typer_page.grid_columnconfigure(1,minsize=230 if narrow else 300)
+        self.jiggler_page.grid_columnconfigure(1,minsize=260 if narrow else 350)
+
+    def save_custom_setting(self,**values):
+        try:self.preferences.update(values)
+        except (OSError,ValueError) as exc:self.tell(str(exc),True)
+
+    def save_settings(self):
+        try:
+            self.preferences.update({'sound':self.sound.get()})
+            self.tell(tr('settings.saved'))
+        except OSError as exc:self.tell(str(exc),True)
+
     def tell(self, text, error=False):
         if not hasattr(self,'status') or not self.status.winfo_exists():
             self.pending_message=(text,error);return
@@ -386,9 +412,11 @@ class AutoTyper:
         try: self.preferences.update(values)
         except (OSError,ValueError) as exc: self.tell(str(exc),True);return
         prefs=self.preferences.load();set_locale(prefs['locale']);set_palette(prefs['appearance'])
-        for child in list(self.root.winfo_children()): child.destroy()
+        for child in list(self.root.winfo_children()):
+            if child is not getattr(self,'report_window',None):child.destroy()
         self.root.configure(fg_color=BG)
         self.setup_gui();self.apply_state(state)
+        self.responsive_layout()
         self.nav.set(tr('settings.title'));self.show_page(tr('settings.title'))
         self.check_permissions();self.tell(tr('settings.saved'))
 
@@ -511,7 +539,9 @@ class AutoTyper:
 
     def sound_event(self, name):
         if self.sound.get():
-            play_sound(name)
+            prefs=self.preferences.load()
+            try:play_sound(name,prefs['sound_theme'],prefs['sound_volume'])
+            except (OSError,ValueError):pass
 
     def start_typing(self):
         if self.macro_active.is_set() or (self.macro_thread and self.macro_thread.is_alive()):self.tell(tr('macro.busy'));return
@@ -677,6 +707,7 @@ class AutoTyper:
     def notification_preference(self):
         self.preferences.update({'notifications':self.notifications.get()})
         self.desktop.notifications_enabled=self.notifications.get()
+        self.desktop.invalidate_notification_request()
         if self.notifications.get():self.desktop.request_notifications()
 
     def request_close(self):
@@ -695,6 +726,7 @@ class AutoTyper:
             try:command=self.desktop_events.get_nowait()
             except queue.Empty:break
             if isinstance(command,tuple) and command[0]=='notification_permission':
+                if not self.desktop.accept_notification_permission(command):continue
                 granted=command[1];self.preferences.update({'notifications':granted});self.notifications.set(granted);self.desktop.notifications_enabled=granted
                 self.tell(tr('desktop.notification_ready' if granted else 'desktop.notification_denied'),not granted);continue
             pages={'typing':'Auto Typer','activity':tr('nav.activity'),'macros':tr('nav.macros'),'settings':tr('settings.title')}

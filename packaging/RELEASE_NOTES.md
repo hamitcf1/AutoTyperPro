@@ -27,3 +27,13 @@ Packages are not Developer ID notarized or Authenticode signed. Published assets
 ### Screen Sharing compatibility
 
 Includes the 3.0.1 physical-key fix for macOS Screen Sharing. Use matching keyboard layouts on both computers. Unsupported remote characters are rejected before typing starts; local Unicode support is preserved.
+
+### Customization and compact windows
+
+- Classic, Soft and Glass notification sounds, with per-app volume from 0–100%.
+- Persistent preferences with an explicit Save settings action and adjustable interface size.
+- Smaller window minimum, adaptive scaling and navigation that moves to a separate row in compact windows.
+- Short cancellable introduction transitions with a reduced-motion option.
+- Less repetitive product branding; existing named typing, Anti-AFK and macro profiles remain available.
+
+Background-only development checks do not validate the new compact window visually. Final native and packaged interactive checks are required before publishing.

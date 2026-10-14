@@ -274,5 +274,16 @@
   "notification.record_finished": "Macro recording is ready to review.",
   "desktop.general": "General",
   "desktop.utility": "Desktop utility",
-  "desktop.permissions": "Input permissions"
+  "desktop.permissions": "Input permissions",
+  "typing.title": "Write at your pace",
+  "settings.audio": "Sound & display",
+  "settings.sound_theme": "Notification sound",
+  "settings.preview_sound": "Preview",
+  "settings.sound_volume": "Sound volume",
+  "settings.scale": "Interface size",
+  "settings.autosaved": "Changes save automatically on this computer.",
+  "settings.save": "Save settings",
+  "sound.classic": "Classic · recommended",
+  "sound.soft": "Soft",
+  "sound.glass": "Glass"
 }

@@ -38,11 +38,14 @@ class DesktopIntegration:
         self._request+=1
         token=(self._generation,self._request)
         def finished(granted):
-            if self._alive and self.notifications_enabled and token==(self._generation,self._request):self.events.put(('notification_permission',bool(granted)))
+            if self._alive and self.notifications_enabled and token==(self._generation,self._request):self.events.put(('notification_permission',bool(granted),token))
         try:
             if not self.ready:return finished(False)
             self.driver.request_notifications(finished)
         except Exception:finished(False)
+    def invalidate_notification_request(self):self._request+=1
+    def accept_notification_permission(self,command):
+        return bool(self._alive and self.notifications_enabled and len(command)==3 and command[2]==(self._generation,self._request))
     def notify(self,title,message):
         if not self.ready or not self.notifications_enabled:return False
         try:return bool(self.driver.notify(title,message))

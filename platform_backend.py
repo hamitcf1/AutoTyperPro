@@ -393,9 +393,11 @@ def open_permissions():
     if sys.platform == 'darwin':
         subprocess.Popen(['open', 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'])
 
-def play_sound(name):
-    path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'sounds' / f'{name}.wav'
-    if not path.exists():
+def play_sound(name,theme='classic',volume=100):
+    from notification_audio import sound_path
+    from preferences import config_directory
+    path=sound_path(name,theme,volume,Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'sounds',config_directory()/'sound-cache')
+    if path is None:
         return
     if sys.platform == 'darwin':
         subprocess.Popen(['/usr/bin/afplay', str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
