@@ -23,3 +23,7 @@ Windows: use Setup or extract the complete portable ZIP. The notification-area i
 Enable system notifications and background operation separately in Settings. Notification permissions depend on the OS; denial does not prevent automation. Editor text and recorded input are never included in notifications or the generated technical summary.
 
 Packages are not Developer ID notarized or Authenticode signed. Published assets include checksums and platform build-verification reports. Intel Mac packages are built and checked under Rosetta; no physical Intel Mac is used.
+
+### Screen Sharing compatibility
+
+Includes the 3.0.1 physical-key fix for macOS Screen Sharing. Use matching keyboard layouts on both computers. Unsupported remote characters are rejected before typing starts; local Unicode support is preserved.

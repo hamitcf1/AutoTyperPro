@@ -84,6 +84,7 @@ class JigglerSchedule:
         self.last = now
 
 def type_text(text, config, backend, stop, events):
+    failure=None
     try:
         config.validate()
         deadline = time.monotonic() + config.start_delay
@@ -91,6 +92,7 @@ def type_text(text, config, backend, stop, events):
             events.put(('countdown', max(0, deadline - time.monotonic())))
             stop.wait(min(0.1, max(0, deadline - time.monotonic())))
         if not stop.is_set():
+            if hasattr(backend,'begin_typing'):backend.begin_typing(text,config,stop)
             events.put(('typing', None))
         previous = ''
         for index, char in enumerate(text):
@@ -108,9 +110,14 @@ def type_text(text, config, backend, stop, events):
                 delay = config.delay()
                 stop.wait(delay * (3 if config.word_pauses and char == ' ' and (previous != ' ') else 1))
             previous = ' ' if char == '\n' and config.newline == 'space' else char
-        events.put(('stopped' if stop.is_set() else 'finished', None))
     except Exception as exc:
-        events.put(('error', str(exc)))
+        failure=str(exc)
+    finally:
+        try:
+            if hasattr(backend,'end_typing'):backend.end_typing()
+        except Exception as exc:
+            failure=f'{failure}; {exc}' if failure else str(exc)
+    events.put(('error',failure) if failure else ('stopped' if stop.is_set() else 'finished',None))
 
 def jiggle(config, backend, stop, typing_active, events):
     schedule = JigglerSchedule(config)

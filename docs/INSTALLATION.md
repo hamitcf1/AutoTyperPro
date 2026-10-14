@@ -43,3 +43,9 @@ A checksum detects a corrupted or mismatched download; it is not a substitute fo
 ## Report a problem
 
 Include the version, OS version, processor, package filename, permission state and exact steps. For source execution, also include Python version. Do not attach private editor text, recordings, credentials or complete unredacted crash reports.
+
+## Typing through macOS Screen Sharing
+
+Version 3.0.1 sends physical keyboard gestures when a recognized remote desktop client is focused after the countdown. This fixes receivers that previously interpreted every character as the A key. Focus the remote text field before the countdown ends; typing stops if the remote client loses focus.
+
+Use matching keyboard layouts on the sending and receiving computers. Letters, punctuation, modifiers and supported dead-key sequences follow the sender's active layout. Characters unavailable in that layout (for example emoji) are rejected before any text is sent; paste those using the remote client's clipboard feature instead. Local typing retains Unicode support. Screen Sharing was verified on an actual remote Mac with Latin and Turkish letters and Shift+Enter. Other recognized clients require their own end-to-end verification.
