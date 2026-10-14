@@ -3,3 +3,7 @@ pynput>=1.8.1,<2; sys_platform == "win32"
 pyinstaller>=6.16,<7
 
 Pillow>=11,<13
+
+pystray>=0.19.5,<0.20; sys_platform == "win32"
+pyobjc-framework-Cocoa>=11,<13; sys_platform == "darwin"
+pyobjc-framework-UserNotifications>=11,<13; sys_platform == "darwin"
