@@ -47,3 +47,15 @@ class HeadlessDesktopRegressions(unittest.TestCase):
         driver=WindowsDesktop.__new__(WindowsDesktop);driver.icon=Icon();driver.ready=False;driver.closed=threading.Event();driver.lock=threading.RLock()
         driver.start();driver.stop();driver.icon.running=True;driver.icon.setup(driver.icon)
         self.assertEqual(driver.icon.effective_stops,1);self.assertFalse(driver.icon.visible);self.assertFalse(driver.ready)
+    def test_notification_save_failure_does_not_stop_ui_polling(self):
+        import time
+        app=SimpleNamespace(closing=False,permission_checked=time.monotonic(),listener_started=False,typing_events=queue.Queue(),jiggler_events=queue.Queue(),desktop_events=queue.Queue(),jiggler_thread=None,typing_active=threading.Event(),macro_active=threading.Event(),activity_badge=Mock(),jig_description=Mock(),macro_page=Mock(),desktop=Mock(),preferences=Mock(),notifications=Mock(),tell=Mock(),root=Mock(),poll=Mock(),reveal=Mock())
+        app.desktop.accept_notification_permission.return_value=True
+        app.preferences.update.side_effect=PermissionError('Cannot write preferences')
+        app.poll_desktop=lambda:AutoTyper.poll_desktop(app)
+        app.desktop_events.put(('notification_permission',True,(1,1)));app.desktop_events.put('open')
+        AutoTyper.poll(app)
+        app.root.after.assert_called_once_with(100,app.poll)
+        app.reveal.assert_called_once()
+        self.assertFalse(app.desktop.notifications_enabled)
+        app.notifications.set.assert_called_once_with(False)

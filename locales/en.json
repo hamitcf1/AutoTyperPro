@@ -285,5 +285,6 @@
   "settings.save": "Save settings",
   "sound.classic": "Classic · recommended",
   "sound.soft": "Soft",
-  "sound.glass": "Glass"
+  "sound.glass": "Glass",
+  "desktop.notification_save_failed": "Could not save notification preferences. Notifications are off for this session."
 }

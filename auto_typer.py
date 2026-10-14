@@ -703,7 +703,6 @@ class AutoTyper:
     def system_notification(self,kind):
         keys={'finished':'notification.finished','error':'notification.error','macro_finished':'notification.macro_finished','record_finished':'notification.record_finished'}
         if kind in keys and self.preferences.load()['notifications']:
-            self.desktop.notifications_enabled=True
             self.desktop.notify(tr('notification.title'),tr(keys[kind]))
 
     def notification_preference(self):
@@ -729,7 +728,12 @@ class AutoTyper:
             except queue.Empty:break
             if isinstance(command,tuple) and command[0]=='notification_permission':
                 if not self.desktop.accept_notification_permission(command):continue
-                granted=command[1];self.preferences.update({'notifications':granted});self.notifications.set(granted);self.desktop.notifications_enabled=granted
+                granted=command[1]
+                try:self.preferences.update({'notifications':granted})
+                except OSError:
+                    self.notifications.set(False);self.desktop.notifications_enabled=False
+                    self.tell(tr('desktop.notification_save_failed'),True);continue
+                self.notifications.set(granted);self.desktop.notifications_enabled=granted
                 self.tell(tr('desktop.notification_ready' if granted else 'desktop.notification_denied'),not granted);continue
             pages={'typing':'Auto Typer','activity':tr('nav.activity'),'macros':tr('nav.macros'),'settings':tr('settings.title')}
             if command=='quit':self.close();return
