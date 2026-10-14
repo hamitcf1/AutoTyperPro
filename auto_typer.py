@@ -103,12 +103,17 @@ class AutoTyper:
         self.desktop.start()
         self.desktop.notifications_enabled=prefs['notifications']
         self.root.bind('<Escape>', lambda _: self.emergency_stop())
-        self.root.bind('<Command-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
-        self.root.bind('<Control-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
+        self.root.bind('<Command-Return>', self.start_shortcut)
+        self.root.bind('<Control-Return>', self.start_shortcut)
         self.root.after(100, self.poll)
         self.root.after(200, self.check_permissions)
         if show_intro and (not self.preferences.intro_complete()):
             self.root.after(250, self.show_introduction)
+
+    def start_shortcut(self,event=None):
+        if self.page=='Auto Typer':self.start_typing()
+        elif self.page in ('Mouse Jiggler',tr('nav.activity')):self.start_jiggler()
+        return 'break'
 
     def label(self, parent, text, size=14, color=None, weight='normal', **kwargs):
         return ctk.CTkLabel(parent, text=text, text_color=INK if color is None else color, font=(FONT, size, weight), anchor='w', **kwargs)
@@ -212,6 +217,9 @@ class AutoTyper:
         self.clear_btn = self.button(toolbar, tr('ui.021e6221a5d4'), self.clear_text, width=70)
         self.clear_btn.grid(row=0, column=3, padx=(4, 0))
         self.text_input = ctk.CTkTextbox(editor, fg_color=INSET, corner_radius=10, border_width=1, border_color=LINE, font=(FONT, 16), text_color=INK, wrap='word', spacing1=5, spacing3=5)
+        # Widget binding runs before Tk Text's default Return insertion.
+        self.text_input.bind('<Command-Return>',self.start_shortcut)
+        self.text_input.bind('<Control-Return>',self.start_shortcut)
         from profile_controls import ProfileControls
         from dataclasses import asdict
         self.typing_profiles=ProfileControls(editor,self,'typing',lambda:asdict(self.config()),self.apply_typing_profile)

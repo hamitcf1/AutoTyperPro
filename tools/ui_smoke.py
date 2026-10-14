@@ -35,6 +35,14 @@ def pump_until(predicate,timeout=8):
 app.root.geometry('980x740'); pump()
 assert hasattr(app,'desktop'),'Native desktop adapter is not connected'
 assert app.desktop.ready,'Native quick access did not initialize'
+app.text_input.insert('1.0','Shortcut preserves this text')
+app.text_input._textbox.focus_force();pump()
+for shortcut in (('<Command-Return>','<Control-Return>') if sys.platform=='darwin' else ('<Control-Return>',)):
+    before=app.text_input.get('1.0','end-1c')
+    app.text_input._textbox.event_generate(shortcut);pump(.1)
+    assert app.text_input.get('1.0','end-1c')==before,'Start shortcut mutated editor text'
+    app.emergency_stop();pump_until(lambda:not app.typing_active.is_set())
+app.text_input.delete('1.0','end')
 app.text_input.insert('1.0','Tray draft')
 app.preferences.update({'keep_running':True})
 app.request_close();pump();assert app.root.state()=='withdrawn'

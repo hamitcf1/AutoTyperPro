@@ -69,3 +69,19 @@ class HeadlessDesktopRegressions(unittest.TestCase):
         app.preferences.load.return_value={'notifications':False}
         AutoTyper.system_notification(app,'finished')
         app.sound_event.assert_not_called()
+
+class StartShortcutTests(unittest.TestCase):
+    def test_shortcut_consumes_event_and_starts_only_current_tool(self):
+        from localization import tr
+        app=SimpleNamespace(page='Auto Typer',start_typing=Mock(),start_jiggler=Mock())
+        self.assertEqual(AutoTyper.start_shortcut(app),'break')
+        app.start_typing.assert_called_once();app.start_jiggler.assert_not_called()
+        app.page=tr('nav.activity')
+        self.assertEqual(AutoTyper.start_shortcut(app),'break')
+        app.start_jiggler.assert_called_once()
+
+    def test_settings_shortcut_does_not_start_background_activity(self):
+        from localization import tr
+        app=SimpleNamespace(page=tr('settings.title'),start_typing=Mock(),start_jiggler=Mock())
+        self.assertEqual(AutoTyper.start_shortcut(app),'break')
+        app.start_typing.assert_not_called();app.start_jiggler.assert_not_called()

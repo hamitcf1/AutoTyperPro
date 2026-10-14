@@ -21,7 +21,7 @@ class StatusIconTests(unittest.TestCase):
         with Image.open(root/'assets/menubar-template.png') as image:
             alpha=image.getchannel('A')
             self.assertEqual(alpha.getpixel((0,0)),0)
-            self.assertLess(sum(bool(value) for value in alpha.getdata()),image.width*image.height/2)
+            self.assertLess(sum(bool(value) for value in alpha.tobytes()),image.width*image.height/2)
         from unittest.mock import patch
         import sys
         analysis=Mock()
