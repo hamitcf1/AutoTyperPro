@@ -12,7 +12,7 @@ icon = str(root / 'assets' / ('icon.icns' if mac else 'icon.ico'))
 a = Analysis(
     [str(root / 'auto_typer.py')],
     pathex=[str(root)],
-    datas=[(str(root / 'sounds'), 'sounds'),(str(root / 'assets/icon.png'),'assets'),(str(root / 'assets/icon.ico'),'assets'),(str(root/'locales'),'locales')] + collect_data_files('customtkinter'),
+    datas=[(str(root / 'sounds'), 'sounds'),(str(root / 'assets/icon.png'),'assets'),(str(root / 'assets/icon.ico'),'assets'),(str(root/'locales'),'locales')] + ([(str(root/'assets/menubar-template.png'),'assets')] if mac else []) + collect_data_files('customtkinter'),
     hiddenimports=['pystray._win32'] if sys.platform=='win32' else [],
     excludes=['pynput','Quartz','pystray'] if mac else [],
 )

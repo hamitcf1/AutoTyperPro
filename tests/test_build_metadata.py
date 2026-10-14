@@ -13,6 +13,7 @@ class MetadataTests(unittest.TestCase):
             tuples=[node for node in ast.walk(tree) if isinstance(node,ast.Tuple) and len(node.elts)==4 and all(isinstance(e,ast.Constant) for e in node.elts)]
             self.assertTrue(any(tuple(e.value for e in node.elts)==(3,7,12,0) for node in tuples))
             self.assertIn('3.7.12',[node.value for node in ast.walk(tree) if isinstance(node,ast.Constant)])
+            self.assertIn("StringStruct('CompanyName','AetheriusCo')",path.read_text())
     def test_invalid_version_rejected_before_file_write(self):
         from tools.build_metadata import write_windows_version
         with tempfile.TemporaryDirectory() as directory:

@@ -43,3 +43,15 @@ draw.text((640,570),'Drag AutoTyper Pro to Applications',font=font(31),fill='#F0
 draw.text((640,627),'Then open it from Applications to get started.',font=font(21),fill='#97A79C',anchor='mm')
 draw.text((80,738),'LOCAL TOOLS. YOUR RHYTHM.',font=font(16),fill='#97A79C')
 bg.save(out/'dmg-background.png')
+
+# Native status item: the established mark without the app-icon keycap.
+menu_scale=4
+menu=Image.new('RGBA',(18*menu_scale,18*menu_scale),(0,0,0,0))
+md=ImageDraw.Draw(menu)
+def menu_line(points,width=1.8):
+    md.line([(round(x*menu_scale),round(y*menu_scale)) for x,y in points],fill=(0,0,0,255),width=round(width*menu_scale),joint='curve')
+for y,end in ((4,9),(8,7),(12,5)):
+    md.rounded_rectangle((2*menu_scale,round((y-.8)*menu_scale),end*menu_scale,round((y+.8)*menu_scale)),radius=menu_scale,fill=(0,0,0,255))
+menu_line([(8,15),(15,8)])
+menu_line([(10,8),(15,8),(15,13)])
+menu.save(out/'menubar-template.png')

@@ -1,4 +1,4 @@
-"""Real Tk layout checks, exclusively on the runner's invisible Windows desktop."""
+"""Real Tk layout checks: private Windows desktop or explicitly visible macOS test."""
 import os
 from pathlib import Path
 import sys
@@ -6,8 +6,10 @@ import tempfile
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from tools.windows_isolated_ui import WindowsDesktopAPI,validate_child
-if sys.platform!='win32':raise SystemExit('Use windows_isolated_ui.py --test compact; no UI opened.')
-validate_child(WindowsDesktopAPI(),os.environ.get('AUTOTYPER_TEST_DESKTOP'))
+if sys.platform=='win32':
+    validate_child(WindowsDesktopAPI(),os.environ.get('AUTOTYPER_TEST_DESKTOP'))
+elif sys.platform!='darwin' or '--visible-macos' not in sys.argv:
+    raise SystemExit('Use the private Windows runner or explicitly opt into --visible-macos; no UI opened.')
 import customtkinter as ctk
 from auto_typer import AutoTyper
 from support_ui import report_bug

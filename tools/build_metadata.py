@@ -9,7 +9,7 @@ def write_windows_version(path,version):
     text=f'''VSVersionInfo(
  ffi=FixedFileInfo(filevers={parts!r},prodvers={parts!r},mask=0x3f,flags=0,OS=0x40004,fileType=1,subtype=0,date=(0,0)),
  kids=[StringFileInfo([StringTable('040904B0',[
-  StringStruct('CompanyName','hamitcf1'),StringStruct('FileDescription','AutoTyper Pro desktop tools'),
+  StringStruct('CompanyName','AetheriusCo'),StringStruct('FileDescription','AutoTyper Pro desktop tools'),
   StringStruct('FileVersion',{version!r}),StringStruct('InternalName','AutoTyperPro'),
   StringStruct('OriginalFilename','AutoTyperPro.exe'),StringStruct('ProductName','AutoTyper Pro'),
   StringStruct('ProductVersion',{version!r})])]),VarFileInfo([VarStruct('Translation',[1033,1200])])])
