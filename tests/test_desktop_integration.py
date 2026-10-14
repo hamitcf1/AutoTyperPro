@@ -52,7 +52,7 @@ class WindowsMenuTests(unittest.TestCase):
         self.assertEqual(values,['quit'])
     def test_windows_menu_change_builds_native_menu_only_once(self):
         from desktop_windows import WindowsDesktop
-        from pystray import Icon,Menu,MenuItem
+        from pystray._base import Icon,Menu,MenuItem
         from types import SimpleNamespace
         class DummyIcon(Icon):
             def __init__(self):self.rebuilds=0;super().__init__('test')
