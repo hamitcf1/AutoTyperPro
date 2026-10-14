@@ -54,7 +54,9 @@ class Preferences:
     @staticmethod
     def validate(values):
         for key, value in values.items():
-            if key == 'locale' and value in ('en','tr'): continue
+            if key == 'locale':
+                from localization import locale_options
+                if isinstance(value,str) and value in dict(locale_options()): continue
             if key == 'appearance' and value in ('dark','light','system'): continue
             if key in ('intro_complete','sound') and isinstance(value,bool): continue
             if key == 'schema' and type(value) is int and value == 1: continue

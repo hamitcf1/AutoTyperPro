@@ -43,3 +43,7 @@ The release workflow builds macOS arm64, macOS x64 and Windows x64, validates pa
 | `packaging/`, `.github/workflows/` | Installers and release automation |
 
 The repository currently has no license file. Do not assume it grants redistribution rights or introduce a license without the owner's decision.
+
+## Translations
+
+Help make AutoTyper Pro accessible in your language. See [Translating](docs/TRANSLATING.md) for partial catalogs, validation and contributor credits.

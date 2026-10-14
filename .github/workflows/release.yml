@@ -40,6 +40,8 @@ jobs:
         run: python tools/verify_release.py
       - name: Unit tests
         run: python -m unittest discover -s tests -v
+      - name: Validate translation catalogs
+        run: python tools/check_translations.py
       - name: GUI smoke test
         run: python tools/ui_smoke.py
       - name: Native Windows input in controlled target

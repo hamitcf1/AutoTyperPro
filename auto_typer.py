@@ -1,4 +1,4 @@
-from localization import tr, set_locale
+from localization import tr, set_locale, locale_options
 """AutoTyper Pro desktop application. All UI mutations run on the Tk thread."""
 import queue
 import json
@@ -369,8 +369,9 @@ class AutoTyper:
         panel.grid(row=1,column=0,sticky='ew',pady=10)
         page.grid_columnconfigure(0,weight=1)
         self.label(panel,tr('settings.language'),16,weight='bold').pack(anchor='w',padx=24,pady=(24,10))
-        self.language_menu=ctk.CTkOptionMenu(panel,values=['English','Türkçe'],command=lambda v:self.change_preferences(locale='en' if v=='English' else 'tr'),fg_color=LINE,button_color=LINE,text_color=INK)
-        self.language_menu.set('English' if self.preferences.load()['locale']=='en' else 'Türkçe')
+        options=locale_options()
+        self.language_menu=ctk.CTkOptionMenu(panel,values=[label for code,label in options],command=lambda v:self.change_preferences(locale=next(code for code,label in options if label==v)),fg_color=LINE,button_color=LINE,text_color=INK)
+        self.language_menu.set(dict(options).get(self.preferences.load()['locale'],'English'))
         self.language_menu.pack(anchor='w',padx=24)
         self.label(panel,tr('settings.appearance'),16,weight='bold').pack(anchor='w',padx=24,pady=(24,10))
         self.appearance_menu=ctk.CTkOptionMenu(panel,values=[tr('settings.'+v) for v in ('dark','light','system')],command=lambda v:self.change_preferences(appearance=('dark','light','system')[[ tr('settings.'+a) for a in ('dark','light','system')].index(v)]),fg_color=LINE,button_color=LINE,text_color=INK)
