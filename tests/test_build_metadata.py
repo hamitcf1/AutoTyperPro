@@ -19,3 +19,17 @@ class MetadataTests(unittest.TestCase):
             path=Path(directory)/'version.txt'
             with self.assertRaises(ValueError):write_windows_version(path,'3.0; bad')
             self.assertFalse(path.exists())
+
+class FrozenTrayTests(unittest.TestCase):
+    def test_windows_spec_explicitly_packages_dynamic_tray_backend(self):
+        import sys,tempfile
+        from pathlib import Path
+        from unittest.mock import Mock,patch
+        import PyInstaller.utils.hooks
+        source=(Path(__file__).resolve().parents[1]/'AutoTyperPro.spec').read_text()
+        with tempfile.TemporaryDirectory() as directory,patch('sys.platform','win32'),patch('PyInstaller.utils.hooks.collect_data_files',return_value=[]):
+            analysis=Mock();scope={'SPECPATH':directory,'Analysis':analysis,'PYZ':Mock(),'EXE':Mock(),'COLLECT':Mock(),'BUNDLE':Mock()}
+            old_path=list(sys.path)
+            try:exec(compile(source,'AutoTyperPro.spec','exec'),scope)
+            finally:sys.path[:]=old_path
+            self.assertIn('pystray._win32',analysis.call_args.kwargs['hiddenimports'])
