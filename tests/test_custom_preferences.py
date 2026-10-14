@@ -62,3 +62,21 @@ class CustomPreferencesTests(unittest.TestCase):
             window_resize.assert_not_called()
             ResponsiveWindow._set_scaling(window,.8,1.25)
             window_resize.assert_called_once_with(.8,1.25)
+    def test_settings_controls_persist_sound_without_opening_windows(self):
+        from auto_typer import AutoTyper
+        from settings_ui import build_settings
+        from unittest.mock import Mock,patch
+        from contextlib import ExitStack
+        with tempfile.TemporaryDirectory() as directory,ExitStack() as stack:
+            app=AutoTyper.__new__(AutoTyper);app.preferences=Preferences(Path(directory)/'prefs.json')
+            app.page_title=Mock();app.label=Mock();app.button=Mock();app.switch=Mock();app.tell=Mock();app.sound=Mock();app.sound.get.return_value=True
+            app.sound_event=Mock();app.change_preferences=Mock();app.notification_preference=Mock();app.permission_action=Mock()
+            widgets={name:stack.enter_context(patch('settings_ui.ctk.'+name)) for name in ('CTkFrame','CTkScrollableFrame','CTkOptionMenu','CTkSlider','BooleanVar')}
+            build_settings(app,Mock())
+            widgets['CTkSlider'].call_args.kwargs['command'](35.4)
+            self.assertEqual(app.preferences.load()['sound_volume'],35)
+            sound_menu=next(call for call in widgets['CTkOptionMenu'].call_args_list if 'Glass' in call.kwargs['values'])
+            sound_menu.kwargs['command']('Glass')
+            self.assertEqual(app.preferences.load()['sound_theme'],'glass')
+            AutoTyper.save_settings(app)
+            self.assertTrue(app.preferences.load()['sound'])
