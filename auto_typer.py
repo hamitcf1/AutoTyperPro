@@ -61,7 +61,8 @@ class AutoTyper:
         if sys.platform=='win32':
             from desktop_windows import set_taskbar_identity
             set_taskbar_identity()
-        self.root = ctk.CTk(fg_color=BG)
+        from responsive import ResponsiveWindow
+        self.root = ResponsiveWindow(fg_color=BG)
         self.root.title(f'AutoTyper Pro {VERSION}')
         self.root.geometry('1120x800')
         self.root.minsize(740, 540)
@@ -315,7 +316,8 @@ class AutoTyper:
     def responsive_layout(self,event=None):
         if self.closing or (event is not None and event.widget is not self.root):return
         from responsive import fit_scale
-        width=self.root.winfo_width();height=self.root.winfo_height()
+        dpi=self.root._get_window_scaling()
+        width=self.root.winfo_width()/dpi;height=self.root.winfo_height()/dpi
         if width<100 or height<100:return
         scale=fit_scale(width,height,self.preferences.load()['ui_scale'])
         if abs(scale-getattr(self,'_layout_scale',0))>.015:

@@ -34,7 +34,7 @@ class CustomPreferencesTests(unittest.TestCase):
         from auto_typer import AutoTyper
         from types import SimpleNamespace
         from unittest.mock import Mock,patch
-        root=Mock();root.winfo_width.return_value=800;root.winfo_height.return_value=600
+        root=Mock();root._get_window_scaling.return_value=1;root.winfo_width.return_value=800;root.winfo_height.return_value=600
         app=SimpleNamespace(closing=False,root=root,preferences=Mock(),nav=Mock(),typer_page=Mock(),jiggler_page=Mock())
         app.preferences.load.return_value={'ui_scale':1}
         with patch('auto_typer.ctk.set_widget_scaling') as scale:
@@ -51,3 +51,14 @@ class CustomPreferencesTests(unittest.TestCase):
                 path=sound_path(event,theme,100,sounds,sounds/'unused-cache')
                 self.assertIsNotNone(path)
                 with wave.open(str(path),'rb') as audio:self.assertEqual(audio.getsampwidth(),2)
+    def test_widget_scaling_does_not_lock_window_minimum_or_resize_window(self):
+        from responsive import ResponsiveWindow
+        from unittest.mock import Mock,patch
+        import customtkinter as ctk
+        window=ResponsiveWindow.__new__(ResponsiveWindow)
+        window._get_window_scaling=lambda:1
+        with patch.object(ctk.CTk,'_set_scaling') as window_resize:
+            ResponsiveWindow._set_scaling(window,.8,1)
+            window_resize.assert_not_called()
+            ResponsiveWindow._set_scaling(window,.8,1.25)
+            window_resize.assert_called_once_with(.8,1.25)
