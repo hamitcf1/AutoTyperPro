@@ -1,7 +1,7 @@
 <p align="center"><img src="assets/icon.png" width="88" alt="AutoTyper Pro icon"></p>
 <h1 align="center">AutoTyper Pro</h1>
 <p align="center"><strong>Less repetition. Your pace. Your control.</strong><br>Automatic typing, Mouse Jiggler / Anti-AFK and local macros for macOS and Windows.</p>
-<p align="center"><a href="https://github.com/hamitcf1/AutoTyperPro/releases/latest">Download</a> · <a href="docs/INSTALLATION.md">Installation & permissions</a> · <a href="CONTRIBUTING.md">Contribute</a> · <a href="README_TR.md">Türkçe</a></p>
+<p align="center"><a href="https://github.com/AetheriusCo/AutoTyperPro/releases/latest">Download</a> · <a href="docs/INSTALLATION.md">Installation & permissions</a> · <a href="CONTRIBUTING.md">Contribute</a> · <a href="README_TR.md">Türkçe</a></p>
 
 ![AutoTyper Pro overview](docs/assets/overview.svg)
 
@@ -9,15 +9,17 @@ AutoTyper Pro is a local desktop utility for repetitive typing and small, idle-t
 
 No account. No telemetry. No automatic activity on launch.
 
+Created by [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](https://github.com/AetheriusCo).
+
 ## Download
 
 | Platform | Recommended download | Alternative |
 | --- | --- | --- |
-| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-macos-arm64.dmg) | M-series Macs |
-| macOS — Intel | [Drag-to-install DMG](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-macos-x64.dmg) | Intel Macs |
-| Windows — x64 | [Setup installer](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/hamitcf1/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-portable.zip) |
+| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-macos-arm64.dmg) | M-series Macs |
+| macOS — Intel | [Drag-to-install DMG](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-macos-x64.dmg) | Intel Macs |
+| Windows — x64 | [Setup installer](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-portable.zip) |
 
-[All releases, SHA-256 checksums and build verification](https://github.com/hamitcf1/AutoTyperPro/releases/latest)
+[All releases, SHA-256 checksums and build verification](https://github.com/AetheriusCo/AutoTyperPro/releases/latest)
 
 **Current release: 3.0.0.** Saved profiles, customizable desktop tools and local macro recording. macOS Apple Silicon/Intel and Windows x64 packages are built from the same source commit and include build verification and SHA-256 checksums.
 
@@ -75,7 +77,7 @@ Text and input activity stay on your device. The application does not send them 
 Requires Python 3.11+ with Tk support. Packaged downloads include their runtime; Python is only needed for source development.
 
 ```bash
-git clone https://github.com/hamitcf1/AutoTyperPro.git
+git clone https://github.com/AetheriusCo/AutoTyperPro.git
 cd AutoTyperPro
 python -m venv .venv
 ```
@@ -93,4 +95,4 @@ Source execution may require permission for Python or the launching terminal rat
 
 See [Contributing](CONTRIBUTING.md) for tests, native input verification and build commands. Build sources for the macOS DMG and Windows installer are kept in `packaging/`; generated binaries and virtual environments are excluded from Git.
 
-Found a problem? [Report a bug](https://github.com/hamitcf1/AutoTyperPro/issues/new?template=bug_report.yml) with the application version, OS, installation method and reproduction steps. Please remove private text and identifying details from logs or screenshots.
+Found a problem? [Report a bug](https://github.com/AetheriusCo/AutoTyperPro/issues/new?template=bug_report.yml) with the application version, OS, installation method and reproduction steps. Please remove private text and identifying details from logs or screenshots.

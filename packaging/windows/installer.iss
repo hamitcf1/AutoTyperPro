@@ -5,8 +5,8 @@
 AppId={{97B412B1-0916-4D2C-91D0-385F173F699A}
 AppName=AutoTyper Pro
 AppVersion={#AppVersion}
-AppPublisher=hamitcf1
-AppPublisherURL=https://github.com/hamitcf1/AutoTyperPro
+AppPublisher=Hamit Can Fındık / AetheriusCo
+AppPublisherURL=https://github.com/AetheriusCo/AutoTyperPro
 DefaultDirName={localappdata}\Programs\AutoTyperPro
 DefaultGroupName=AutoTyper Pro
 DisableProgramGroupPage=yes

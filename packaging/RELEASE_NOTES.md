@@ -2,6 +2,8 @@
 
 Desktop tools for typing, Mouse Jiggler / Anti-AFK and explicit local macro recording.
 
+Created by [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](https://github.com/AetheriusCo).
+
 ### What is new
 
 - Language selection, persistent dark/light/system appearance and notification preferences.
