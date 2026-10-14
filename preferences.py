@@ -34,7 +34,7 @@ def atomic_json(path, data):
 
 
 class Preferences:
-    DEFAULTS = {'schema':1, 'intro_complete':False, 'locale':'en', 'appearance':'dark', 'sound':True}
+    DEFAULTS = {'schema':1, 'intro_complete':False, 'locale':'en', 'appearance':'dark', 'sound':True, 'notifications':False, 'keep_running':False, 'reduced_motion':True}
 
     def __init__(self, path=None):
         self.path = Path(path) if path else config_directory() / 'preferences.json'
@@ -58,7 +58,7 @@ class Preferences:
                 from localization import locale_options
                 if isinstance(value,str) and value in dict(locale_options()): continue
             if key == 'appearance' and value in ('dark','light','system'): continue
-            if key in ('intro_complete','sound') and isinstance(value,bool): continue
+            if key in ('intro_complete','sound','notifications','keep_running','reduced_motion') and isinstance(value,bool): continue
             if key == 'schema' and type(value) is int and value == 1: continue
             raise ValueError('Invalid preference: ' + str(key))
 

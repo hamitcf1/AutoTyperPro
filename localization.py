@@ -16,11 +16,12 @@ def _pairs(items):
     return result
 
 def _json(path):
+    if path.is_symlink():raise ValueError('Symbolic links are not accepted for locale data')
     if path.stat().st_size>1024*1024: raise ValueError('Catalog exceeds 1 MiB')
     return json.loads(path.read_text(encoding='utf-8'),object_pairs_hook=_pairs)
 
 def _fields(text):
-    return {name for _,name,_,_ in Formatter().parse(text) if name is not None}
+    return {(name,spec,conversion) for _,name,spec,conversion in Formatter().parse(text) if name is not None}
 
 def _catalog(root,code,errors):
     try:

@@ -24,6 +24,15 @@ class DesktopTests(unittest.TestCase):
         desktop=DesktopIntegration(queue.Queue(),None,driver=driver)
         self.assertFalse(desktop.start());self.assertFalse(desktop.ready)
         self.assertFalse(desktop.notify('Done','Finished'))
+    def test_permission_result_is_ignored_after_disable_or_restart(self):
+        from desktop_integration import DesktopIntegration
+        events=queue.Queue();driver=Driver();pending=[]
+        driver.request_notifications=pending.append
+        desktop=DesktopIntegration(events,None,driver=driver);desktop.start();desktop.notifications_enabled=True
+        desktop.request_notifications();desktop.notifications_enabled=False;pending.pop()(True)
+        self.assertTrue(events.empty())
+        desktop.notifications_enabled=True;desktop.request_notifications();desktop.stop();desktop.start();pending.pop()(True)
+        self.assertTrue(events.empty())
     def test_notifications_are_optional_and_fail_closed(self):
         from desktop_integration import DesktopIntegration
         driver=Driver();desktop=DesktopIntegration(queue.Queue(),None,driver=driver);desktop.start()

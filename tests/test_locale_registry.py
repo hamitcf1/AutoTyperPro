@@ -37,3 +37,13 @@ class RegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=self.fixture(directory);(root/'manifest.json').write_text('broken')
             self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+    def test_symlinked_catalog_does_not_read_outside_locale_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base=Path(directory);root=base/'locales';root.mkdir();self.fixture(root)
+            private=base/'private.json';private.write_text('{"hello":"Private {name}"}')
+            (root/'es.json').unlink();(root/'es.json').symlink_to(private)
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+    def test_incompatible_format_specifier_uses_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory);(root/'es.json').write_text('{"hello":"Hola {name:d}"}')
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')

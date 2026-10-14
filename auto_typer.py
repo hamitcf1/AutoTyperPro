@@ -1,3 +1,6 @@
+import sys
+if __name__ == "__main__":
+    sys.modules["auto_typer"] = sys.modules[__name__]
 from localization import tr, set_locale, locale_options
 """AutoTyper Pro desktop application. All UI mutations run on the Tk thread."""
 import queue
@@ -15,15 +18,16 @@ import customtkinter as ctk
 from PIL import Image
 from preferences import Preferences, VERSION, resource
 from onboarding import Introduction
-from support_ui import show_support
+from support_ui import show_support, report_bug
+from desktop_integration import DesktopIntegration
 from engine import TypingConfig, JigglerConfig, type_text, jiggle
 from platform_backend import create_backend, open_permissions, play_sound
-BG = '#141816'
-PANEL = '#1D2420'
-INSET = '#171D19'
-LINE = '#303C34'
+BG = '#111216'
+PANEL = '#1D1F25'
+INSET = '#16181D'
+LINE = '#343741'
 INK = '#F0F3EF'
-MUTED = '#97A79C'
+MUTED = '#A0A5B0'
 ACCENT = '#ACD5AE'
 HOVER = '#C2E3C3'
 DANGER = '#EDB6A9'
@@ -38,9 +42,9 @@ def set_palette(appearance):
     global BG, PANEL, INSET, LINE, INK, MUTED, ACCENT, HOVER, DANGER
     ctk.set_appearance_mode(appearance)
     if ctk.get_appearance_mode() == 'Light':
-        BG,PANEL,INSET,LINE,INK,MUTED,ACCENT,HOVER,DANGER = ('#EDF1ED','#FFFFFF','#F4F6F3','#DCE5DD','#18261C','#596C5E','#A5CEAA','#8DBE93','#9E3634')
+        BG,PANEL,INSET,LINE,INK,MUTED,ACCENT,HOVER,DANGER = ('#F2F3F7','#FFFFFF','#F4F6F3','#DCDDE5','#18261C','#596C5E','#A5CEAA','#8DBE93','#9E3634')
     else:
-        BG,PANEL,INSET,LINE,INK,MUTED,ACCENT,HOVER,DANGER = ('#141816','#1D2420','#171D19','#303C34','#F0F3EF','#97A79C','#ACD5AE','#C2E3C3','#EDB6A9')
+        BG,PANEL,INSET,LINE,INK,MUTED,ACCENT,HOVER,DANGER = ('#111216','#1D1F25','#16181D','#343741','#F0F3EF','#A0A5B0','#ACD5AE','#C2E3C3','#EDB6A9')
 
 
 def duration(seconds):
@@ -54,11 +58,14 @@ class AutoTyper:
         prefs = self.preferences.load()
         set_locale(prefs['locale'])
         set_palette(prefs['appearance'])
+        if sys.platform=='win32':
+            from desktop_windows import set_taskbar_identity
+            set_taskbar_identity()
         self.root = ctk.CTk(fg_color=BG)
         self.root.title(f'AutoTyper Pro {VERSION}')
         self.root.geometry('1120x800')
         self.root.minsize(980, 740)
-        self.root.protocol('WM_DELETE_WINDOW', self.close)
+        self.root.protocol('WM_DELETE_WINDOW', self.request_close)
         self.backend = create_backend()
         self.intro = None
         self.permission_checked = 0
@@ -88,6 +95,10 @@ class AutoTyper:
         self.word_pauses = ctk.BooleanVar(value=False)
         self.sound = ctk.BooleanVar(value=prefs['sound'])
         self.setup_gui()
+        self.desktop_events=queue.Queue()
+        self.desktop=DesktopIntegration(self.desktop_events,resource('assets/icon.png'))
+        self.desktop.start()
+        self.desktop.notifications_enabled=prefs['notifications']
         self.root.bind('<Escape>', lambda _: self.emergency_stop())
         self.root.bind('<Command-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
         self.root.bind('<Control-Return>', lambda _: self.start_typing() if self.page == 'Auto Typer' else self.start_jiggler())
@@ -100,10 +111,10 @@ class AutoTyper:
         return ctk.CTkLabel(parent, text=text, text_color=color, font=(FONT, size, weight), anchor='w', **kwargs)
 
     def button(self, parent, text, command, primary=False, **kwargs):
-        return ctk.CTkButton(parent, text=text, command=command, height=kwargs.pop('height', 38), corner_radius=9, font=(FONT, 13, 'bold' if primary else 'normal'), fg_color=ACCENT if primary else LINE, hover_color=HOVER if primary else '#435447', text_color=BG if primary else INK, text_color_disabled='#6C7B70', **kwargs)
+        return ctk.CTkButton(parent, text=text, command=command, height=kwargs.pop('height', 38), corner_radius=19, border_width=1, border_color=ACCENT if primary else LINE, font=(FONT, 13, 'bold' if primary else 'normal'), fg_color=ACCENT if primary else LINE, hover_color=HOVER if primary else '#435447', text_color=BG if primary else INK, text_color_disabled='#6C7B70', **kwargs)
 
     def entry(self, parent, value, width=76):
-        entry = ctk.CTkEntry(parent, width=width, height=36, fg_color=INSET, border_color=LINE, corner_radius=8, font=(FONT, 14), text_color=INK)
+        entry = ctk.CTkEntry(parent, width=width, height=36, fg_color=INSET, border_color=LINE, corner_radius=12, font=(FONT, 14), text_color=INK)
         entry.insert(0, str(value))
         return entry
 
@@ -126,7 +137,7 @@ class AutoTyper:
             self.root.iconbitmap(str(resource('assets/icon.ico')))
         self.label(header, 'AutoTyper', 20, weight='bold').grid(row=0, column=1, sticky='sw')
         self.label(header, 'PRO  /  DESKTOP TOOLS', 10, MUTED).grid(row=1, column=1, sticky='nw')
-        self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', tr('nav.activity'), tr('nav.macros'), tr('settings.title')], command=self.show_page, height=38, corner_radius=10, font=(FONT, 13), fg_color=PANEL, selected_color=LINE, selected_hover_color='#435447', unselected_color=PANEL, unselected_hover_color=LINE, text_color=INK, dynamic_resizing=False, width=410)
+        self.nav = ctk.CTkSegmentedButton(header, values=['Auto Typer', tr('nav.activity'), tr('nav.macros'), tr('settings.title')], command=self.show_page, height=42, corner_radius=21, font=(FONT, 13), fg_color=PANEL, selected_color=LINE, selected_hover_color='#435447', unselected_color=PANEL, unselected_hover_color=LINE, text_color=INK, dynamic_resizing=False, width=410)
         self.nav.set('Auto Typer')
         self.nav.grid(row=0, column=2, rowspan=2, padx=14)
         self.activity_badge = self.label(header, tr('ui.4106acbcd32a'), 12, ACCENT)
@@ -161,6 +172,7 @@ class AutoTyper:
         self.status = self.label(footer, tr('ui.a0f874cdf144'), 12, MUTED, wraplength=650, justify='left')
         self.status.grid(row=0, column=0, sticky='w')
         self.status.configure(wraplength=390)
+        self.button(footer,'?',lambda:show_support(self),width=28,height=28).grid(row=0,column=4,padx=(8,0))
         self.button(footer,tr('ui.acc8c9e36f29')+' / ESC',self.emergency_stop,width=92,height=28).grid(row=0,column=3,padx=(12,0))
         self.button(footer, tr('ui.c568af74c1f8'), self.show_introduction, width=68, height=28).grid(row=0, column=1, padx=12)
         self.label(footer, tr('ui.5deac40c6ff6'), 11, MUTED).grid(row=0, column=2, sticky='e')
@@ -364,23 +376,8 @@ class AutoTyper:
         self.update_stats()
 
     def build_settings(self):
-        page=self.settings_page
-        self.page_title(page,'04 / PREFERENCES',tr('settings.title'),tr('settings.description'))
-        panel=ctk.CTkFrame(page,fg_color=PANEL,corner_radius=16)
-        panel.grid(row=1,column=0,sticky='ew',pady=10)
-        page.grid_columnconfigure(0,weight=1)
-        self.label(panel,tr('settings.language'),16,weight='bold').pack(anchor='w',padx=24,pady=(24,10))
-        options=locale_options()
-        self.language_menu=ctk.CTkOptionMenu(panel,values=[label for code,label in options],command=lambda v:self.change_preferences(locale=next(code for code,label in options if label==v)),fg_color=LINE,button_color=LINE,text_color=INK)
-        self.language_menu.set(dict(options).get(self.preferences.load()['locale'],'English'))
-        self.language_menu.pack(anchor='w',padx=24)
-        self.label(panel,tr('settings.appearance'),16,weight='bold').pack(anchor='w',padx=24,pady=(24,10))
-        self.appearance_menu=ctk.CTkOptionMenu(panel,values=[tr('settings.'+v) for v in ('dark','light','system')],command=lambda v:self.change_preferences(appearance=('dark','light','system')[[ tr('settings.'+a) for a in ('dark','light','system')].index(v)]),fg_color=LINE,button_color=LINE,text_color=INK)
-        self.appearance_menu.set(tr('settings.'+self.preferences.load()['appearance']))
-        self.appearance_menu.pack(anchor='w',padx=24)
-        self.switch(panel,tr('settings.sound'),self.sound,lambda:self.preferences.update({'sound':self.sound.get()})).pack(anchor='w',padx=24,pady=24)
-        self.button(panel,tr('settings.title')+' ↗',self.permission_action).pack(anchor='w',padx=24,pady=(0,12))
-        self.button(panel,tr('support.about'),lambda:show_support(self)).pack(anchor='w',padx=24,pady=(0,24))
+        from settings_ui import build_settings
+        build_settings(self,self.settings_page)
 
     def change_preferences(self, **values):
         if self.typing_active.is_set() or (self.jiggler_thread and self.jiggler_thread.is_alive()) or self.macro_active.is_set() or self.intro:
@@ -573,6 +570,7 @@ class AutoTyper:
         self.run_label.configure(text=labels[kind])
         self.tell(detail if kind == 'error' else labels[kind], kind == 'error')
         self.sound_event('finish' if kind == 'finished' else 'stop')
+        if kind in ('finished','error'):self.system_notification(kind)
         if kind == 'finished':
             self.progress.set(1)
         self.progress_label.configure(text=tr('ui.8fd6db2690e0', v0=self.typed, v1=self.total, v2=round(self.typed / max(1, self.total) * 100)))
@@ -651,6 +649,7 @@ class AutoTyper:
                 self.jig_stop_btn.configure(state='disabled')
                 self.activity_page.set_busy(False)
                 self.tell(value if kind == 'jiggler_error' else tr('ui.8b10cdb83c0e'), kind == 'jiggler_error')
+                if kind=='jiggler_error':self.system_notification('error')
         jig_active = bool(self.jiggler_thread and self.jiggler_thread.is_alive())
         typing = self.typing_active.is_set()
         self.activity_badge.configure(text=tr('ui.7c052300f26d') if typing and jig_active else tr('ui.2a4a5f6abd9b') if typing else tr('ui.80c610056213') if jig_active else tr('ui.4106acbcd32a'))
@@ -664,12 +663,54 @@ class AutoTyper:
             self.activity_badge.configure(text=tr('macro.badge_recording') if self.macro_page.state=='recording' else tr('macro.badge_playing'))
         if listener_failed:
             self.tell(tr('ui.a69e776cd09f'), True)
-        self.root.after(100, self.poll)
+        self.desktop.update(self.activity_badge.cget('text'),jig_active)
+        self.poll_desktop()
+        if not self.closing:self.root.after(100, self.poll)
+
+    def system_notification(self,kind):
+        keys={'finished':'notification.finished','error':'notification.error','macro_finished':'notification.macro_finished','record_finished':'notification.record_finished'}
+        if kind in keys and self.preferences.load()['notifications']:
+            self.desktop.notifications_enabled=True
+            self.desktop.notify(tr('notification.title'),tr(keys[kind]))
+
+    def notification_preference(self):
+        self.preferences.update({'notifications':self.notifications.get()})
+        self.desktop.notifications_enabled=self.notifications.get()
+        if self.notifications.get():self.desktop.request_notifications()
+
+    def request_close(self):
+        if self.preferences.load()['keep_running']:
+            if self.desktop.ready:self.root.withdraw()
+            else:self.tell(tr('desktop.unavailable'),True)
+        else:self.close()
+
+    def reveal(self,page=None):
+        self.root.deiconify();self.root.lift()
+        if page:
+            self.nav.set(page);self.show_page(page)
+
+    def poll_desktop(self):
+        for _ in range(100):
+            try:command=self.desktop_events.get_nowait()
+            except queue.Empty:break
+            if isinstance(command,tuple) and command[0]=='notification_permission':
+                granted=command[1];self.preferences.update({'notifications':granted});self.notifications.set(granted);self.desktop.notifications_enabled=granted
+                self.tell(tr('desktop.notification_ready' if granted else 'desktop.notification_denied'),not granted);continue
+            pages={'typing':'Auto Typer','activity':tr('nav.activity'),'macros':tr('nav.macros'),'settings':tr('settings.title')}
+            if command=='quit':self.close();return
+            if command=='open':self.reveal()
+            elif command in pages:self.reveal(pages[command])
+            elif command=='about':self.reveal();show_support(self)
+            elif command=='report':self.reveal();report_bug(self)
+            elif command=='start_activity':self.start_jiggler()
+            elif command=='stop_activity':self.jiggler_stop.set()
+            elif command=='stop_all':self.emergency_stop()
 
     def close(self):
         if self.closing:
             return
         self.closing = True
+        self.desktop.stop()
         self.emergency_stop()
         self.backend.close()
         self.root.withdraw()
@@ -687,6 +728,7 @@ class AutoTyper:
                     self.restart_command = None
                     self.listener_started = False
                     self.root.deiconify()
+                    self.desktop.start()
                     self.tell(tr('ui.150f5a043de2', v0=exc), True)
                     self.root.after(100, self.poll)
                     return

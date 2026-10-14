@@ -164,6 +164,7 @@ class MacroPage:
                 self.state='idle';self.app.macro_active.clear();self.set_busy(False)
                 message=value if kind=='macro_error' else tr('macro.'+('recorded' if kind=='record_finished' else 'finished' if kind=='macro_finished' else 'stopped'))
                 self.status.configure(text=message);self.app.tell(message,kind=='macro_error')
+                if kind in ('macro_finished','record_finished','macro_error'):self.app.system_notification('error' if kind=='macro_error' else kind)
         if self.state=='recording':self.status.configure(text=tr('macro.recording',elapsed=time.monotonic()-self.recording_started))
     def snapshot(self):
         return {'entries':{k:v.get() for k,v in self.entries.items()},'capture':{k:v.get() for k,v in self.capture.items()},'speed':self.speed.get(),'fit':self.fit.get(),'selected':self.selected,'draft':self.draft.document() if self.draft else None}
