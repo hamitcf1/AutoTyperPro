@@ -27,7 +27,7 @@ class HeadlessDesktopRegressions(unittest.TestCase):
         desktop.notifications_enabled=False
         self.assertFalse(desktop.accept_notification_permission(command))
     def test_report_draft_window_survives_preference_rebuild(self):
-        report=Mock();normal=Mock()
+        report=Mock();normal=Mock();normal.children={}
         app=SimpleNamespace(typing_active=threading.Event(),jiggler_thread=None,macro_active=threading.Event(),intro=None,report_window=report,snapshot=lambda:{},preferences=Mock(),root=Mock(),setup_gui=Mock(),apply_state=Mock(),nav=Mock(),show_page=Mock(),check_permissions=Mock(),responsive_layout=Mock(),tell=Mock())
         app.preferences.load.return_value={'locale':'en','appearance':'dark'}
         app.root.winfo_children.return_value=[normal,report]

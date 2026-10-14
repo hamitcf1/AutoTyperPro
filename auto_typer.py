@@ -414,8 +414,9 @@ class AutoTyper:
         try: self.preferences.update(values)
         except (OSError,ValueError) as exc: self.tell(str(exc),True);return
         prefs=self.preferences.load();set_locale(prefs['locale']);set_palette(prefs['appearance'])
+        from widget_lifecycle import destroy_tree
         for child in list(self.root.winfo_children()):
-            if child is not getattr(self,'report_window',None):child.destroy()
+            if child is not getattr(self,'report_window',None):destroy_tree(child)
         self.root.configure(fg_color=BG)
         self.setup_gui();self.apply_state(state)
         self.responsive_layout()
