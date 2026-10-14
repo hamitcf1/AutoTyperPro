@@ -100,7 +100,8 @@ def run_test(test):
     import auto_typer
     def forbidden(*args,**kwargs):raise RuntimeError('External UI is forbidden in isolated tests')
     with patch('auto_typer.create_backend',FakeBackend),patch('platform_backend.create_backend',FakeBackend),patch('auto_typer.play_sound'),patch('platform_backend.play_sound'),patch('desktop_integration.create_driver',lambda *args:FakeDesktop()),patch('webbrowser.open',forbidden):
-        runpy.run_path(str(root/'tools'/('ui_smoke.py' if test=='ui' else 'entrypoint_ui_smoke.py')),run_name='__main__')
+        scripts={'ui':'ui_smoke.py','entrypoint':'entrypoint_ui_smoke.py','compact':'compact_ui_smoke.py'}
+        runpy.run_path(str(root/'tools'/scripts[test]),run_name='__main__')
 
 
 
@@ -108,10 +109,12 @@ if __name__=='__main__':
     import argparse
     import tempfile
     import traceback
-    parser=argparse.ArgumentParser();parser.add_argument('--test',choices=['ui','entrypoint'],default='ui');parser.add_argument('--child',action='store_true');parser.add_argument('--log',type=Path);parser.add_argument('--desktop');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--test',choices=['ui','entrypoint','compact'],default='ui');parser.add_argument('--child',action='store_true');parser.add_argument('--log',type=Path);parser.add_argument('--desktop');args=parser.parse_args()
     if sys.platform!='win32':raise SystemExit('Windows-only test runner; no UI was opened.')
     if args.child:
         validate_child(WindowsDesktopAPI(),args.desktop)
+        import os
+        os.environ['AUTOTYPER_TEST_DESKTOP']=args.desktop
         if args.log is None:raise SystemExit('Child log path required')
         with args.log.open('w',encoding='utf-8') as output:
             sys.stdout=sys.stderr=output
