@@ -19,7 +19,7 @@ No account. No telemetry. No automatic activity on launch.
 
 [All releases, SHA-256 checksums and build verification](https://github.com/hamitcf1/AutoTyperPro/releases/latest)
 
-**Current release: 3.0.0.** English-first interface, optional Turkish, saved profiles and local macro recording. macOS Apple Silicon/Intel and Windows x64 packages are built from the same source commit and include build verification and SHA-256 checksums.
+**Current release: 3.0.0.** Saved profiles, customizable desktop tools and local macro recording. macOS Apple Silicon/Intel and Windows x64 packages are built from the same source commit and include build verification and SHA-256 checksums.
 
 Packages are not Developer ID notarized or Windows Authenticode signed. See the [installation guide](docs/INSTALLATION.md) before opening them.
 
@@ -38,13 +38,13 @@ Save, rename, duplicate and import/export typing and Anti-AFK profiles as JSON. 
 
 **Macros:** record mouse movement, clicks, physical keys and scrolling independently. Preview the path, save named recordings, then replay at 0.25–4× speed with a start delay, repeat count and pause between repeats. Movement-only capture is selected initially. Recordings stay local and are limited to five minutes / 10,000 events. Keyboard recordings are platform-specific and depend on the current keyboard layout.
 
-**Settings:** English or Turkish, dark/light/system appearance and sound preferences. Language changes preserve your editor text and configuration.
+**Settings:** language, dark/light/system appearance and sound preferences. Language changes preserve your editor text and configuration.
 
 Mouse Jiggler does not click. It does not guarantee that a particular service will show you as online or that the operating system will stay awake.
 
 ## A look inside
 
-The English 3.0 interface:
+A look at the 3.0 interface:
 
 ![Auto Typer interface](docs/assets/auto-typer.jpg)
 

@@ -4,7 +4,7 @@ Status: approved design. Source implementation is complete; cross-platform relea
 
 ## Purpose and scope
 
-Make AutoTyper Pro a polished, English-first desktop utility that international users can discover, download, install and configure without reading development history. Keep macOS Apple Silicon, macOS Intel and Windows x64 support in one application. Retain the existing Python/native input architecture rather than maintain separate applications.
+Make AutoTyper Pro a polished desktop utility that international users can discover, download, install and configure without reading development history. Keep macOS Apple Silicon, macOS Intel and Windows x64 support in one application. Retain the existing Python/native input architecture rather than maintain separate applications.
 
 The owner requested a professional repository, reliable installers, English application copy, language settings, highly customizable Mouse Jiggler / Anti-AFK activity, recommended defaults and recorded actions. The proposed interpretation of recorded actions includes mouse movement, clicks and physical keyboard keys, with separate capture switches and movement-only capture selected initially.
 

@@ -1,10 +1,10 @@
 ## AutoTyper Pro 3.0.0
 
-English-first desktop tools for typing, Mouse Jiggler / Anti-AFK and explicit local macro recording.
+Desktop tools for typing, Mouse Jiggler / Anti-AFK and explicit local macro recording.
 
 ### What is new
 
-- English default interface, optional Turkish, persistent dark/light/system appearance and notification preferences.
+- Language selection, persistent dark/light/system appearance and notification preferences.
 - Recommended Gentle, Balanced and Keyboard-only presets; adjustable activity distance, direction, duration and keyboard shortcuts.
 - Saved typing and activity profiles with rename, duplication and validated JSON import/export.
 - Independent mouse movement, click, physical-key and scroll capture; local macro library and path preview.

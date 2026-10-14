@@ -1,4 +1,4 @@
-"""English-first catalogs. Only idle UI actions change the current locale."""
+"""Local translation catalogs. Only idle UI actions change the current locale."""
 import json
 from pathlib import Path
 import sys
