@@ -61,7 +61,13 @@ def translation_report(root=None):
     return {'default':'en','locales':locales,'errors':errors}
 
 def locale_options(root=None):
-    return [(code,data['native_name']) for code,data in translation_report(root)['locales'].items()]
+    from collections import Counter
+    options=[(code,data['native_name']) for code,data in translation_report(root)['locales'].items()]
+    counts=Counter(label for code,label in options)
+    while any(count>1 for count in counts.values()):
+        options=[(code,f'{label} ({code})' if counts[label]>1 else label) for code,label in options]
+        counts=Counter(label for code,label in options)
+    return options
 
 class Translator:
     def __init__(self,locale='en',root=None):

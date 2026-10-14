@@ -612,7 +612,7 @@ class AutoTyper:
         if self.jiggler_thread and self.jiggler_thread.is_alive():
             return
         if sys.platform not in ('darwin', 'win32'):
-            self.tell('Mouse Jiggler macOS ve Windows gerektirir.', True)
+            self.tell(tr('activity.platform_required'), True)
             return
         try:
             config = self.activity_page.config()

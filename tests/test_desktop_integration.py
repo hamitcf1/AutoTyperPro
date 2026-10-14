@@ -50,3 +50,15 @@ class WindowsMenuTests(unittest.TestCase):
         values=[]
         item=MenuItem('Quit',menu_action('quit',values.append));item(None)
         self.assertEqual(values,['quit'])
+    def test_windows_menu_change_builds_native_menu_only_once(self):
+        from desktop_windows import WindowsDesktop
+        from pystray import Icon,Menu,MenuItem
+        from types import SimpleNamespace
+        class DummyIcon(Icon):
+            def __init__(self):self.rebuilds=0;super().__init__('test')
+            def _update_menu(self):self.rebuilds+=1
+            def _update_title(self):pass
+        driver=WindowsDesktop.__new__(WindowsDesktop);driver.module=SimpleNamespace(Menu=Menu,MenuItem=MenuItem)
+        driver.icon=DummyIcon();driver.enqueue=lambda command:None
+        driver.update('Idle',{'open':'Open'})
+        self.assertEqual(driver.icon.rebuilds,1)

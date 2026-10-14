@@ -26,7 +26,7 @@ class WindowsDesktop:
         items=[module.MenuItem('AutoTyper Pro · '+status,lambda icon,item:None,enabled=False),module.Menu.SEPARATOR]
         for command,label in labels.items():
             items.append(module.MenuItem(label,menu_action(command,self.enqueue),default=command=='open'))
-        self.icon.menu=module.Menu(*items);self.icon.title='AutoTyper Pro · '+status;self.icon.update_menu()
+        self.icon.menu=module.Menu(*items);self.icon.title='AutoTyper Pro · '+status
     def request_notifications(self,callback):callback(True)
     def notify(self,title,message):self.icon.notify(message,title);return True
     def stop(self):

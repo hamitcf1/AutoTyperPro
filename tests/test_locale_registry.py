@@ -47,3 +47,13 @@ class RegistryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=self.fixture(directory);(root/'es.json').write_text('{"hello":"Hola {name:d}"}')
             self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+    def test_regional_languages_with_same_native_name_remain_selectable(self):
+        from localization import locale_options
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory)
+            (root/'manifest.json').write_text(json.dumps({'default':'en','locales':[{'code':'en','native_name':'English'},{'code':'es','native_name':'Español'},{'code':'es-MX','native_name':'Español'}]}))
+            (root/'es-MX.json').write_text('{}')
+            options=locale_options(root)
+            self.assertEqual(len({label for code,label in options}),3)
+            self.assertEqual(dict(options)['en'],'English')
+            self.assertEqual(dict(options)['es-MX'],'Español (es-MX)')

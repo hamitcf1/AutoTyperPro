@@ -286,5 +286,6 @@
   "sound.classic": "Klasik · önerilen",
   "sound.soft": "Yumuşak",
   "sound.glass": "Cam",
-  "desktop.notification_save_failed": "Bildirim tercihleri kaydedilemedi. Bildirimler bu oturum için kapatıldı."
+  "desktop.notification_save_failed": "Bildirim tercihleri kaydedilemedi. Bildirimler bu oturum için kapatıldı.",
+  "activity.platform_required": "Mouse Jiggler macOS veya Windows gerektirir."
 }
