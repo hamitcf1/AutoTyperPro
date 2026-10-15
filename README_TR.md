@@ -1,8 +1,8 @@
-# AutoTyper Pro 3.0
+# AutoTyper Pro 3.1
 
 macOS ve Windows için otomatik yazma, Mouse Jiggler / Anti-AFK ve yerel makro kaydı. Arayüz dili Settings bölümünden seçilebilir. Hesap gerekmez, telemetri yoktur, açılışta etkinlik başlamaz.
 
-[macOS / Windows paketlerini indir](https://github.com/AetheriusCo/AutoTyperPro/releases/tag/v3.0.0) · [English documentation](README.md) · [Kurulum ve izinler](docs/INSTALLATION.md)
+[macOS / Windows paketlerini indir](https://github.com/AetheriusCo/AutoTyperPro/releases/tag/v3.1.0) · [English documentation](README.md) · [Kurulum ve izinler](docs/INSTALLATION.md)
 
 Geliştiren: [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](https://github.com/AetheriusCo).
 
