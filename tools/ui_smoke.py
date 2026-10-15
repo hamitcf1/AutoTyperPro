@@ -9,27 +9,7 @@ from unittest.mock import patch
 from preferences import Preferences
 from auto_typer import AutoTyper
 
-class FakeBackend:
-    def __init__(self):
-        import threading
-        self.output=[];self.permitted=True;self.lock=threading.RLock();self.native_platform='darwin'
-    def allowed(self): return self.permitted
-    def listen_escape(self, callback): self.callback=callback
-    def escape_healthy(self): return True
-    def write(self,text): self.output.append(text)
-    def newline(self): self.output.append('\n')
-    def idle_seconds(self): return 0
-    def micro_activity(self,f18,stop): return True
-    def display_layout(self):return [{'left':0,'top':0,'width':100,'height':100}]
-    def move_to(self,point):self.output.append(point)
-    def release_held_inputs(self):pass
-    def listen_events(self,callback,capture):
-        class Listener:
-            def stop(self):pass
-            def join(self,timeout=None):pass
-        callback('move',{'x':2,'y':3});callback('move',{'x':4,'y':5})
-        return Listener()
-    def close(self): pass
+from tools.ui_fakes import FakeBackend
 
 config_directory=tempfile.TemporaryDirectory()
 os.environ['AUTOTYPER_CONFIG_DIR']=config_directory.name
@@ -38,7 +18,10 @@ macro_directory=Path(config_directory.name,'macros');macro_directory.mkdir()
 (macro_directory/'invalid.json').write_text('{"schema":1,"id":[],"name":"broken"}')
 app=AutoTyper(show_intro=False); app.backend.close(); app.backend=FakeBackend()
 errors=[]
-app.root.report_callback_exception=lambda *args: errors.append(args)
+def report_exception(*args):
+    import traceback
+    traceback.print_exception(*args);errors.append(args)
+app.root.report_callback_exception=report_exception
 def pump(seconds=.3):
     deadline=time.monotonic()+seconds
     while time.monotonic()<deadline:
@@ -50,6 +33,22 @@ def pump_until(predicate,timeout=8):
     assert predicate(),'UI activity did not settle before timeout'
 
 app.root.geometry('980x740'); pump()
+assert hasattr(app,'desktop'),'Native desktop adapter is not connected'
+assert app.desktop.ready,'Native quick access did not initialize'
+app.text_input.insert('1.0','Shortcut preserves this text')
+app.text_input._textbox.focus_force();pump()
+for shortcut in (('<Command-Return>','<Control-Return>') if sys.platform=='darwin' else ('<Control-Return>',)):
+    before=app.text_input.get('1.0','end-1c')
+    app.text_input._textbox.event_generate(shortcut);pump(.1)
+    assert app.text_input.get('1.0','end-1c')==before,'Start shortcut mutated editor text'
+    app.emergency_stop();pump_until(lambda:not app.typing_active.is_set())
+app.text_input.delete('1.0','end')
+app.text_input.insert('1.0','Tray draft')
+app.preferences.update({'keep_running':True})
+app.request_close();pump();assert app.root.state()=='withdrawn'
+app.desktop.enqueue('open');pump();assert app.root.state()=='normal'
+assert app.text_input.get('1.0','end-1c')=='Tray draft'
+app.preferences.update({'keep_running':False});app.text_input.delete('1.0','end')
 with tempfile.TemporaryDirectory() as locale_dir:
     app.preferences=Preferences(Path(locale_dir)/'prefs.json')
     app.text_input.insert('1.0','Draft survives language changes')
@@ -91,7 +90,9 @@ app.backend.permitted=True;app.check_permissions();pump()
 assert not app.permission_bar.winfo_viewable()
 with tempfile.TemporaryDirectory() as d:
     app.preferences=Preferences(Path(d)/'intro.json')
-    app.show_introduction();pump()
+    app.show_introduction()
+    assert float(app.intro.panel.place_info()['rely'])==0.5,'Reduced motion must avoid introductory movement'
+    pump()
     assert app.intro is not None
     app.intro.advance();app.intro.advance();app.intro.advance();pump()
     assert app.intro is None and app.preferences.intro_complete()
@@ -106,10 +107,10 @@ with tempfile.TemporaryDirectory() as d:
     assert app.speed.get()==original_speed
     assert not Path(resume).exists()
     app.restart_command=None
-app.restart_command=['missing-program'];app.closing=True
+app.restart_command=['missing-program']
 with patch('auto_typer.subprocess.Popen',side_effect=OSError('test launch failure')):
-    app.await_shutdown()
-assert app.root.winfo_exists() and not app.closing
+    app.close()
+assert app.root.winfo_exists() and not app.closing and app.desktop.ready
 app.show_page('Macros');pump()
 app.macro_page.entries['start_delay'].delete(0,'end');app.macro_page.entries['start_delay'].insert(0,'0')
 app.macro_page.start_record();pump(.5);assert app.macro_active.is_set()
@@ -119,4 +120,6 @@ assert app.macro_page.draft and app.macro_page.draft.events[0].data=={'x':2,'y':
 app.macro_page.start_play();pump_until(lambda:not app.macro_active.is_set())
 assert app.backend.output[-1]==(2,3)
 assert not errors,errors
-app.close(); print('UI smoke PASS: minimum size, typing, jiggler, ESC, live permissions, intro persistence/replay, state-preserving restart, shutdown')
+app.desktop.enqueue('quit');app.poll();assert not app.desktop.ready
+assert not errors,errors
+print('UI smoke PASS: minimum size, typing, jiggler, ESC, live permissions, intro persistence/replay, state-preserving restart, shutdown')

@@ -1,0 +1,23 @@
+name: Translation contribution
+description: Offer a new language or improve an existing translation
+title: "[Translation]: "
+body:
+  - type: input
+    id: language
+    attributes:
+      label: Language and locale code
+      placeholder: Español (es)
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: What would you like to translate or improve?
+      description: Partial translations are welcome. Link a pull request if available.
+    validations:
+      required: true
+  - type: input
+    id: credit
+    attributes:
+      label: Public contributor credit (optional)
+      description: The name or handle you want included in translation credits; no private contact details.

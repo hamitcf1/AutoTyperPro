@@ -10,8 +10,22 @@ Use Python 3.11+ with Tk support. Create a virtual environment and install `requ
 
 ```bash
 python -m unittest discover -s tests -v
-python tools/ui_smoke.py
+python tools/check_translations.py
 ```
+
+These checks do not open application windows, send input or play audio. When another task is active on the desktop, keep application launches and native tests for a separate interactive test session.
+
+On Windows, source UI checks can run on an invisible, temporary Win32 desktop:
+
+```powershell
+python tools/windows_isolated_ui.py --test ui
+python tools/windows_isolated_ui.py --test entrypoint
+python tools/windows_isolated_ui.py --test compact
+```
+
+The runner launches its own child process on the private desktop, checks that it is not the input desktop, and leaves the visible desktop unchanged. Automation, tray, audio and browser operations are simulated. Compact checks cover small windows, theme/scale combinations, action visibility and report drafts. This does not replace native tray/input, sound playback or packaged-launch checks. Do not run the internal child mode directly.
+
+When the interactive desktop is available, `python tools/ui_smoke.py` exercises the source UI and native quick-access adapter.
 
 The UI smoke test uses a simulated backend. Native integration tests send real events to their own controlled test window and require an interactive desktop. Run them only deliberately:
 
@@ -43,3 +57,7 @@ The release workflow builds macOS arm64, macOS x64 and Windows x64, validates pa
 | `packaging/`, `.github/workflows/` | Installers and release automation |
 
 The repository currently has no license file. Do not assume it grants redistribution rights or introduce a license without the owner's decision.
+
+## Translations
+
+Help make AutoTyper Pro accessible in your language. See [Translating](docs/TRANSLATING.md) for partial catalogs, validation and contributor credits.

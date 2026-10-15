@@ -1,0 +1,7 @@
+{
+  "default": "en",
+  "locales": [
+    {"code": "en", "native_name": "English", "contributors": ["Hamit Can Fındık"]},
+    {"code": "tr", "native_name": "Türkçe", "contributors": ["Hamit Can Fındık"]}
+  ]
+}

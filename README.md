@@ -15,13 +15,13 @@ Created by [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](ht
 
 | Platform | Recommended download | Alternative |
 | --- | --- | --- |
-| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.1/AutoTyperPro-3.0.1-macos-arm64.dmg) | M-series Macs |
-| macOS — Intel | [Drag-to-install DMG](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.1/AutoTyperPro-3.0.1-macos-x64.dmg) | Intel Macs |
-| Windows — x64 | [Setup installer](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.0.0/AutoTyperPro-3.0.0-windows-x64-portable.zip) |
+| macOS — Apple Silicon | [Drag-to-install DMG](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.1.0/AutoTyperPro-3.1.0-macos-arm64.dmg) | M-series Macs |
+| macOS — Intel | [Drag-to-install DMG](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.1.0/AutoTyperPro-3.1.0-macos-x64.dmg) | Intel Macs |
+| Windows — x64 | [Setup installer](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.1.0/AutoTyperPro-3.1.0-windows-x64-setup.exe) | [Portable ZIP](https://github.com/AetheriusCo/AutoTyperPro/releases/download/v3.1.0/AutoTyperPro-3.1.0-windows-x64-portable.zip) |
 
 [All releases, SHA-256 checksums and build verification](https://github.com/AetheriusCo/AutoTyperPro/releases/latest)
 
-**macOS: 3.0.1 · Windows: 3.0.0.** The macOS hotfix corrects typing through Screen Sharing. Saved profiles, customizable desktop tools and local macro recording are available on both platforms. Each release includes build verification and SHA-256 checksums.
+**Version 3.1.0 for macOS and Windows.** Native desktop quick access, configurable sound and scaling, and community localization. Includes the Screen Sharing typing fix. Saved profiles, customizable desktop tools and local macro recording are available on both platforms. Each release includes build verification and SHA-256 checksums.
 
 Packages are not Developer ID notarized or Windows Authenticode signed. See the [installation guide](docs/INSTALLATION.md) before opening them.
 

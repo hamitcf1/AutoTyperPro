@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-VERSION = '3.0.1'
+VERSION = '3.1.0'
 
 
 def resource(name):
@@ -34,7 +34,7 @@ def atomic_json(path, data):
 
 
 class Preferences:
-    DEFAULTS = {'schema':1, 'intro_complete':False, 'locale':'en', 'appearance':'dark', 'sound':True}
+    DEFAULTS = {'schema':1, 'intro_complete':False, 'locale':'en', 'appearance':'dark', 'sound':True, 'sound_theme':'classic', 'sound_volume':70, 'ui_scale':1.0, 'notifications':False, 'keep_running':False, 'reduced_motion':True}
 
     def __init__(self, path=None):
         self.path = Path(path) if path else config_directory() / 'preferences.json'
@@ -54,9 +54,14 @@ class Preferences:
     @staticmethod
     def validate(values):
         for key, value in values.items():
-            if key == 'locale' and value in ('en','tr'): continue
+            if key == 'locale':
+                from localization import locale_options
+                if isinstance(value,str) and value in dict(locale_options()): continue
+            if key == 'sound_theme' and value in ('classic','soft','glass'): continue
+            if key == 'sound_volume' and type(value) is int and 0<=value<=100: continue
+            if key == 'ui_scale' and type(value) in (int,float) and value in (.8,.85,1,1.1,1.25): continue
             if key == 'appearance' and value in ('dark','light','system'): continue
-            if key in ('intro_complete','sound') and isinstance(value,bool): continue
+            if key in ('intro_complete','sound','notifications','keep_running','reduced_motion') and isinstance(value,bool): continue
             if key == 'schema' and type(value) is int and value == 1: continue
             raise ValueError('Invalid preference: ' + str(key))
 

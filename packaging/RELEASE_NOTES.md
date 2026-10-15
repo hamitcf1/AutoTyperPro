@@ -1,14 +1,39 @@
-## AutoTyper Pro 3.0.1
+## AutoTyper Pro 3.1.0
 
-### macOS Screen Sharing fix
+Desktop quick access, community translations and visible product ownership.
 
-Typing into another Mac through Screen Sharing now sends real keyboard gestures instead of repeating the A key. Local Unicode typing retains its existing behavior.
+Created by [Hamit Can Fındık](https://github.com/hamitcf1) · [AetheriusCo](https://github.com/AetheriusCo).
 
-- Captures the current keyboard layout on the main thread, including Shift, Option and supported dead-key combinations.
-- Checks the complete text before sending; unsupported remote characters show a clear error without partial input.
-- Stops when the selected remote client loses focus and releases held keys on cancellation or failure.
-- Verified against a real remote Mac with Latin and Turkish letters, punctuation and Shift+Enter.
+### What is new
 
-Use matching keyboard layouts on both computers. Emoji and characters unavailable in the active physical layout require the remote client's clipboard paste feature. No clipboard settings are changed automatically.
+- Native macOS menu-bar utility and Windows system-tray actions for opening tools, controlling Anti-AFK, stopping all activity and quitting.
+- Branded monochrome macOS menu-bar icon that follows the system appearance.
+- Command+Return and Control+Return start the selected tool without changing editor text.
+- Windows taskbar identity and application icon; optional system notifications for completion and actionable errors.
+- Optional background operation when the window closes. Disabled by default; hiding never starts activity, and Quit stops all tools.
+- About/support area with creator and organization links, translation credits and a user-reviewed bug report summary. Reports are submitted by the user on GitHub.
+- Reviewed locale registry with partial-translation fallback, duplicate/placeholder validation, contribution guide and translation issue form.
+- Refined neutral surfaces, floating rounded navigation, compact preference groups and reduced-motion introduction. Native menus follow the OS appearance; the Tk window does not use Apple's native Liquid Glass material.
+- Consistent light theme across tool pages and the introduction; safe cleanup of native status items and late notification callbacks.
 
-This is a macOS hotfix. Windows 3.0.0 installers remain available from the previous release. Packages use ad-hoc signing and are not Developer ID notarized. Created by Hamit Can Fındık · AetheriusCo.
+### Install
+
+Mac: choose arm64 for Apple Silicon or x64 for Intel, open the DMG, drag into Applications, eject the image and open the installed app. Enable the current app's input permission in Privacy & Security. Ad-hoc replacement builds may require a renewed grant.
+
+Windows: use Setup or extract the complete portable ZIP. The notification-area icon may initially be in Windows' hidden-icons area.
+
+Enable system notifications and background operation separately in Settings. Notification permissions depend on the OS; denial does not prevent automation. Editor text and recorded input are never included in notifications or the generated technical summary.
+
+Packages are not Developer ID notarized or Authenticode signed. Published assets include checksums and platform build-verification reports. Intel Mac packages are built and checked under Rosetta; no physical Intel Mac is used.
+
+### Screen Sharing compatibility
+
+Includes the 3.0.1 physical-key fix for macOS Screen Sharing. Use matching keyboard layouts on both computers. Unsupported remote characters are rejected before typing starts; local Unicode support is preserved.
+
+### Customization and compact windows
+
+- Classic, Soft and Glass notification sounds, with per-app volume from 0–100%.
+- Persistent preferences with an explicit Save settings action and adjustable interface size.
+- Smaller window minimum, adaptive scaling and navigation that moves to a separate row in compact windows.
+- Short cancellable introduction transitions with a reduced-motion option.
+- Less repetitive product branding; existing named typing, Anti-AFK and macro profiles remain available.

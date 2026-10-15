@@ -1,0 +1,73 @@
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from localization import Translator
+
+class RegistryTests(unittest.TestCase):
+    def fixture(self, directory):
+        root=Path(directory)
+        (root/'manifest.json').write_text(json.dumps({'default':'en','locales':[{'code':'en','native_name':'English','contributors':[]},{'code':'es','native_name':'Español','contributors':['Translator']}]}))
+        (root/'en.json').write_text(json.dumps({'hello':'Hello {name}','missing':'Fallback'}))
+        (root/'es.json').write_text(json.dumps({'hello':'Hola {name}'}))
+        return root
+    def test_partial_third_locale_is_discovered_and_falls_back(self):
+        from localization import locale_options,translation_report
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory)
+            self.assertIn(('es','Español'),locale_options(root))
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hola Ada')
+            self.assertEqual(Translator('es',root=root).text('missing'),'Fallback')
+            self.assertEqual(translation_report(root)['locales']['es']['translated'],1)
+    def test_placeholder_mismatch_falls_back_and_is_reported(self):
+        from localization import translation_report
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory);(root/'es.json').write_text('{"hello":"Hola {wrong}"}')
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+            self.assertTrue(translation_report(root)['errors'])
+    def test_duplicate_keys_and_path_traversal_are_rejected(self):
+        from localization import locale_options,translation_report
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory);(root/'es.json').write_text('{"hello":"A","hello":"B"}')
+            self.assertTrue(translation_report(root)['errors'])
+            (root/'manifest.json').write_text('{"default":"en","locales":[{"code":"../secret","native_name":"Bad","contributors":[]}]}')
+            self.assertEqual(locale_options(root),[('en','English')])
+            self.assertTrue(translation_report(root)['errors'])
+    def test_invalid_manifest_does_not_break_startup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory);(root/'manifest.json').write_text('broken')
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+    def test_symlinked_catalog_does_not_read_outside_locale_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base=Path(directory);root=base/'locales';root.mkdir();self.fixture(root)
+            private=base/'private.json';private.write_text('{"hello":"Private {name}"}')
+            (root/'es.json').unlink()
+            try:(root/'es.json').symlink_to(private)
+            except OSError as error:
+                if getattr(error,'winerror',None)!=1314:raise
+                # A standard Windows account may not create links. Still test
+                # rejection before content reads; no elevated access is needed.
+                from unittest.mock import patch
+                (root/'es.json').write_text(private.read_text())
+                with patch.object(Path,'is_symlink',autospec=True,side_effect=lambda item:item==root/'es.json'):
+                    self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+                return
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+    def test_incompatible_format_specifier_uses_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory);(root/'es.json').write_text('{"hello":"Hola {name:d}"}')
+            self.assertEqual(Translator('es',root=root).text('hello',name='Ada'),'Hello Ada')
+    def test_regional_languages_with_same_native_name_remain_selectable(self):
+        from localization import locale_options
+        with tempfile.TemporaryDirectory() as directory:
+            root=self.fixture(directory)
+            (root/'manifest.json').write_text(json.dumps({'default':'en','locales':[{'code':'en','native_name':'English'},{'code':'es','native_name':'Español'},{'code':'es-MX','native_name':'Español'}]}))
+            (root/'es-MX.json').write_text('{}')
+            options=locale_options(root)
+            self.assertEqual(len({label for code,label in options}),3)
+            self.assertEqual(dict(options)['en'],'English')
+            self.assertEqual(dict(options)['es-MX'],'Español (es-MX)')
+    def test_link_rejection_still_checked_without_windows_link_privilege(self):
+        from unittest.mock import patch
+        error=OSError('Link privilege unavailable');error.winerror=1314
+        with patch.object(Path,'symlink_to',side_effect=error):self.test_symlinked_catalog_does_not_read_outside_locale_directory()
