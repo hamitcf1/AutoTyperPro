@@ -11,7 +11,7 @@ class StatusIconTests(unittest.TestCase):
         icon=Mock()
         desktop.appkit.NSImage.alloc.return_value.initWithContentsOfFile_.return_value=icon
         self.assertIs(desktop._status_image(),icon)
-        desktop.appkit.NSImage.alloc.return_value.initWithContentsOfFile_.assert_called_once_with('/app/assets/menubar-template.png')
+        desktop.appkit.NSImage.alloc.return_value.initWithContentsOfFile_.assert_called_once_with(str(Path('/app/assets/menubar-template.png')))
         icon.setSize_.assert_called_once_with((18,18))
         icon.setTemplate_.assert_called_once_with(True)
 
