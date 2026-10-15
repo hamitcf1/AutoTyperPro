@@ -8,5 +8,5 @@ from localization import translation_report
 parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path);args=parser.parse_args()
 report=translation_report(args.root)
 for value in report['locales'].values():value.pop('catalog')
-print(json.dumps(report,ensure_ascii=False,indent=2))
+print(json.dumps(report,ensure_ascii=True,indent=2))
 raise SystemExit(bool(report['errors']))
