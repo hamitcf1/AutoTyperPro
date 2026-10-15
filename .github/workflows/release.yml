@@ -42,8 +42,14 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Validate translation catalogs
         run: python tools/check_translations.py
-      - name: GUI smoke test
+      - name: macOS GUI smoke test
+        if: runner.os == 'macOS'
+        timeout-minutes: 2
         run: python tools/ui_smoke.py
+      - name: Windows isolated GUI smoke test
+        if: runner.os == 'Windows'
+        timeout-minutes: 2
+        run: python tools/windows_isolated_ui.py --test ui
       - name: Native Windows input in controlled target
         if: runner.os == 'Windows'
         run: python tools/windows_native_smoke.py
